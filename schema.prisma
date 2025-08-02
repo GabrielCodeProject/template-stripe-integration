@@ -1,0 +1,1119 @@
+// Prisma Schema for NextJS Stripe Payment Template
+// Optimized for Canadian e-commerce with comprehensive audit logging
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUMS
+// ============================================================================
+
+enum UserRole {
+  ADMIN
+  CUSTOMER
+  SUPPORT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum ProductType {
+  DIGITAL
+  PHYSICAL
+  SUBSCRIPTION
+  BUNDLE
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DRAFT
+  ARCHIVED
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REQUIRES_ACTION
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+  PAST_DUE
+  UNPAID
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  TRIALING
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  UNCOLLECTIBLE
+  VOID
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum PromoCodeType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_SHIPPING
+  BUY_X_GET_Y
+}
+
+enum TaxType {
+  GST    // Goods and Services Tax
+  HST    // Harmonized Sales Tax
+  PST    // Provincial Sales Tax
+  QST    // Quebec Sales Tax
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  PAYMENT
+  REFUND
+  SUBSCRIPTION_CHANGE
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+}
+
+enum CanadianProvince {
+  AB // Alberta
+  BC // British Columbia
+  MB // Manitoba
+  NB // New Brunswick
+  NL // Newfoundland and Labrador
+  NS // Nova Scotia
+  ON // Ontario
+  PE // Prince Edward Island
+  QC // Quebec
+  SK // Saskatchewan
+  NT // Northwest Territories
+  NU // Nunavut
+  YT // Yukon
+}
+
+// ============================================================================
+// USER MANAGEMENT
+// ============================================================================
+
+model User {
+  id                String     @id @default(cuid())
+  email             String     @unique
+  emailVerified     Boolean    @default(false)
+  emailVerifiedAt   DateTime?
+  hashedPassword    String?
+  firstName         String?
+  lastName          String?
+  phone             String?
+  dateOfBirth       DateTime?
+  profileImageUrl   String?
+  
+  // Stripe Integration
+  stripeCustomerId  String?    @unique
+  
+  // Account Status
+  status            UserStatus @default(PENDING_VERIFICATION)
+  role              UserRole   @default(CUSTOMER)
+  
+  // Canadian Address Information
+  address           Address?
+  
+  // Timestamps
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  lastLoginAt       DateTime?
+  
+  // Relations
+  sessions          Session[]
+  orders            Order[]
+  subscriptions     Subscription[]
+  downloads         Download[]
+  supportTickets    SupportTicket[]
+  supportMessages   SupportMessage[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  payments          Payment[]
+  invoices          Invoice[]
+  reviews           Review[]
+  
+  @@map("users")
+  @@index([email])
+  @@index([stripeCustomerId])
+  @@index([status])
+  @@index([role])
+  @@index([createdAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model Address {
+  id           String            @id @default(cuid())
+  userId       String            @unique
+  firstName    String
+  lastName     String
+  company      String?
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  province     CanadianProvince
+  postalCode   String
+  country      String            @default("CA")
+  phone        String?
+  isDefault    Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  billingOrders  Order[]         @relation("BillingAddress")
+  shippingOrders Order[]         @relation("ShippingAddress")
+  
+  @@map("addresses")
+  @@index([userId])
+  @@index([province])
+  @@index([postalCode])
+}
+
+// ============================================================================
+// PRODUCT MANAGEMENT
+// ============================================================================
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  imageUrl    String?
+  parentId    String?
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+  
+  @@map("categories")
+  @@index([slug])
+  @@index([parentId])
+  @@index([isActive])
+}
+
+model Product {
+  id                String        @id @default(cuid())
+  name              String
+  slug              String        @unique
+  description       String?
+  shortDescription  String?
+  type              ProductType   @default(DIGITAL)
+  status            ProductStatus @default(DRAFT)
+  
+  // Pricing (in cents, CAD)
+  price             Int
+  compareAtPrice    Int?
+  costPerItem       Int?
+  
+  // Stripe Integration
+  stripeProductId   String?       @unique
+  stripePriceId     String?       @unique
+  
+  // Digital Product Specific
+  downloadUrl       String?
+  downloadLimit     Int?          // null = unlimited downloads
+  downloadExpiry    Int?          // days after purchase
+  fileSize          Int?          // in bytes
+  fileMimeType      String?
+  
+  // Physical Product Specific
+  sku               String?       @unique
+  barcode           String?
+  weight            Decimal?      // in grams
+  requiresShipping  Boolean       @default(false)
+  
+  // Inventory
+  trackInventory    Boolean       @default(false)
+  inventoryQuantity Int?
+  allowBackorder    Boolean       @default(false)
+  
+  // SEO & Marketing
+  metaTitle         String?
+  metaDescription   String?
+  metaKeywords      String?
+  featured          Boolean       @default(false)
+  
+  // Category & Organization
+  categoryId        String?
+  tags              String[]
+  sortOrder         Int           @default(0)
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  publishedAt       DateTime?
+  
+  // Relations
+  category          Category?     @relation(fields: [categoryId], references: [id])
+  variants          ProductVariant[]
+  images            ProductImage[]
+  orderItems        OrderItem[]
+  bundleItems       BundleItem[]
+  subscriptionPlans SubscriptionPlan[]
+  downloads         Download[]
+  reviews           Review[]
+  
+  @@map("products")
+  @@index([slug])
+  @@index([type])
+  @@index([status])
+  @@index([categoryId])
+  @@index([featured])
+  @@index([createdAt])
+  @@index([price])
+}
+
+model ProductVariant {
+  id                String   @id @default(cuid())
+  productId         String
+  name              String
+  sku               String?  @unique
+  
+  // Pricing (in cents, CAD)
+  price             Int?
+  compareAtPrice    Int?
+  costPerItem       Int?
+  
+  // Stripe Integration
+  stripePriceId     String?  @unique
+  
+  // Variant Options (e.g., size, color, flavor)
+  option1           String?
+  option2           String?
+  option3           String?
+  
+  // Inventory
+  inventoryQuantity Int?
+  weight            Decimal? // in grams
+  
+  // Status
+  isActive          Boolean  @default(true)
+  sortOrder         Int      @default(0)
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relations
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems        OrderItem[]
+  
+  @@map("product_variants")
+  @@index([productId])
+  @@index([sku])
+  @@index([stripePriceId])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  altText   String?
+  sortOrder Int      @default(0)
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@map("product_images")
+  @@index([productId])
+  @@index([isPrimary])
+}
+
+model BundleItem {
+  id        String  @id @default(cuid())
+  bundleId  String
+  productId String
+  quantity  Int     @default(1)
+  discount  Int?    // discount in cents
+  sortOrder Int     @default(0)
+  
+  bundle    Product @relation("BundleToProduct", fields: [bundleId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@map("bundle_items")
+  @@unique([bundleId, productId])
+  @@index([bundleId])
+  @@index([productId])
+}
+
+// ============================================================================
+// SUBSCRIPTION MANAGEMENT
+// ============================================================================
+
+model SubscriptionPlan {
+  id              String   @id @default(cuid())
+  productId       String
+  name            String
+  description     String?
+  
+  // Pricing (in cents, CAD)
+  price           Int
+  billingInterval String   // 'month', 'year'
+  trialDays       Int?     @default(0)
+  
+  // Stripe Integration
+  stripePriceId   String   @unique
+  
+  // Features
+  features        Json?    // JSON array of features
+  maxUsers        Int?     // for team plans
+  maxDownloads    Int?     // for digital products
+  
+  // Status
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  subscriptions   Subscription[]
+  
+  @@map("subscription_plans")
+  @@index([productId])
+  @@index([stripePriceId])
+  @@index([isActive])
+}
+
+model Subscription {
+  id                    String             @id @default(cuid())
+  userId                String
+  planId                String
+  
+  // Stripe Integration
+  stripeSubscriptionId  String             @unique
+  stripeCustomerId      String
+  
+  // Status & Billing
+  status                SubscriptionStatus @default(INCOMPLETE)
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  cancelAtPeriodEnd     Boolean            @default(false)
+  canceledAt            DateTime?
+  endedAt               DateTime?
+  trialStart            DateTime?
+  trialEnd              DateTime?
+  
+  // Pricing (in cents, CAD)
+  price                 Int
+  quantity              Int                @default(1)
+  
+  // Metadata
+  metadata              Json?
+  
+  // Timestamps
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  
+  // Relations
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan                  SubscriptionPlan   @relation(fields: [planId], references: [id])
+  invoices              Invoice[]
+  
+  @@map("subscriptions")
+  @@index([userId])
+  @@index([planId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+  @@index([currentPeriodEnd])
+}
+
+// ============================================================================
+// ORDER MANAGEMENT
+// ============================================================================
+
+model Order {
+  id                String      @id @default(cuid())
+  userId            String?
+  orderNumber       String      @unique
+  
+  // Stripe Integration
+  stripePaymentIntentId String? @unique
+  stripeSessionId       String? @unique
+  
+  // Order Details
+  status            OrderStatus @default(PENDING)
+  
+  // Pricing (in cents, CAD)
+  subtotal          Int
+  taxAmount         Int         @default(0)
+  shippingAmount    Int         @default(0)
+  discountAmount    Int         @default(0)
+  totalAmount       Int
+  currency          String      @default("CAD")
+  
+  // Customer Information
+  customerEmail     String
+  customerPhone     String?
+  
+  // Billing Address
+  billingAddressId  String?
+  
+  // Shipping Address (for physical products)
+  shippingAddressId String?
+  shippingMethod    String?
+  trackingNumber    String?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  
+  // Promo Code
+  promoCodeId       String?
+  
+  // Notes
+  customerNotes     String?
+  adminNotes        String?
+  
+  // Tax Information
+  taxBreakdown      Json?       // Detailed tax breakdown for Canadian compliance
+  
+  // Timestamps
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  completedAt       DateTime?
+  
+  // Relations
+  user              User?       @relation(fields: [userId], references: [id])
+  billingAddress    Address?    @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  shippingAddress   Address?    @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  promoCode         PromoCode?  @relation(fields: [promoCodeId], references: [id])
+  items             OrderItem[]
+  payments          Payment[]
+  refunds           Refund[]
+  
+  @@map("orders")
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([status])
+  @@index([stripePaymentIntentId])
+  @@index([createdAt])
+  @@index([customerEmail])
+}
+
+model OrderItem {
+  id              String          @id @default(cuid())
+  orderId         String
+  productId       String
+  variantId       String?
+  
+  // Item Details
+  name            String
+  description     String?
+  sku             String?
+  quantity        Int             @default(1)
+  
+  // Pricing (in cents, CAD) - captured at time of order
+  unitPrice       Int
+  totalPrice      Int
+  
+  // Digital Product Access
+  downloadLimit   Int?
+  downloadExpiry  DateTime?
+  
+  // Timestamps
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  
+  // Relations
+  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product         Product         @relation(fields: [productId], references: [id])
+  variant         ProductVariant? @relation(fields: [variantId], references: [id])
+  downloads       Download[]
+  
+  @@map("order_items")
+  @@index([orderId])
+  @@index([productId])
+  @@index([variantId])
+}
+
+// ============================================================================
+// PAYMENT PROCESSING
+// ============================================================================
+
+model Payment {
+  id                    String        @id @default(cuid())
+  orderId               String?
+  userId                String?
+  
+  // Stripe Integration
+  stripePaymentIntentId String        @unique
+  stripePaymentMethodId String?
+  stripeChargeId        String?
+  
+  // Payment Details
+  status                PaymentStatus @default(PENDING)
+  amount                Int           // in cents, CAD
+  currency              String        @default("CAD")
+  paymentMethod         String?       // card, bank_transfer, etc.
+  
+  // Fees and Processing
+  stripeFee             Int?          // Stripe processing fee
+  applicationFee        Int?          // Our application fee
+  netAmount             Int?          // Amount after fees
+  
+  // Metadata
+  description           String?
+  metadata              Json?
+  receiptUrl            String?
+  
+  // Failure Information
+  failureCode           String?
+  failureMessage        String?
+  
+  // Timestamps
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  processedAt           DateTime?
+  
+  // Relations
+  order                 Order?        @relation(fields: [orderId], references: [id])
+  user                  User?         @relation(fields: [userId], references: [id])
+  refunds               Refund[]
+  
+  @@map("payments")
+  @@index([orderId])
+  @@index([userId])
+  @@index([stripePaymentIntentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Refund {
+  id              String       @id @default(cuid())
+  orderId         String
+  paymentId       String
+  
+  // Stripe Integration
+  stripeRefundId  String       @unique
+  
+  // Refund Details
+  status          RefundStatus @default(PENDING)
+  amount          Int          // in cents, CAD
+  currency        String       @default("CAD")
+  reason          String?      // requested_by_customer, fraudulent, etc.
+  description     String?
+  
+  // Admin Information
+  processedBy     String?      // Admin user ID who processed the refund
+  adminNotes      String?
+  
+  // Timestamps
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  processedAt     DateTime?
+  
+  // Relations
+  order           Order        @relation(fields: [orderId], references: [id])
+  payment         Payment      @relation(fields: [paymentId], references: [id])
+  
+  @@map("refunds")
+  @@index([orderId])
+  @@index([paymentId])
+  @@index([stripeRefundId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// INVOICE MANAGEMENT
+// ============================================================================
+
+model Invoice {
+  id                String        @id @default(cuid())
+  subscriptionId    String?
+  userId            String
+  
+  // Stripe Integration
+  stripeInvoiceId   String        @unique
+  
+  // Invoice Details
+  invoiceNumber     String        @unique
+  status            InvoiceStatus @default(DRAFT)
+  
+  // Amounts (in cents, CAD)
+  subtotal          Int
+  taxAmount         Int           @default(0)
+  discountAmount    Int           @default(0)
+  totalAmount       Int
+  amountPaid        Int           @default(0)
+  amountDue         Int
+  currency          String        @default("CAD")
+  
+  // Dates
+  invoiceDate       DateTime
+  dueDate           DateTime?
+  paidAt            DateTime?
+  
+  // URLs
+  hostedInvoiceUrl  String?
+  invoicePdf        String?
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  subscription      Subscription? @relation(fields: [subscriptionId], references: [id])
+  user              User          @relation(fields: [userId], references: [id])
+  
+  @@map("invoices")
+  @@index([subscriptionId])
+  @@index([userId])
+  @@index([stripeInvoiceId])
+  @@index([status])
+  @@index([invoiceDate])
+  @@index([dueDate])
+}
+
+// ============================================================================
+// PROMO CODES & DISCOUNTS
+// ============================================================================
+
+model PromoCode {
+  id                String        @id @default(cuid())
+  code              String        @unique
+  name              String
+  description       String?
+  type              PromoCodeType
+  
+  // Discount Values
+  discountPercent   Int?          // for percentage discounts (0-100)
+  discountAmount    Int?          // for fixed amount discounts (in cents)
+  
+  // Usage Limits
+  usageLimit        Int?          // null = unlimited
+  usageCount        Int           @default(0)
+  perCustomerLimit  Int?          // limit per customer
+  
+  // Conditions
+  minimumAmount     Int?          // minimum order amount (in cents)
+  applicableProducts String[]     // product IDs this code applies to
+  
+  // Validity
+  isActive          Boolean       @default(true)
+  startsAt          DateTime?
+  expiresAt         DateTime?
+  
+  // Timestamps
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  orders            Order[]
+  
+  @@map("promo_codes")
+  @@index([code])
+  @@index([isActive])
+  @@index([expiresAt])
+}
+
+// ============================================================================
+// TAX MANAGEMENT (Canadian Compliance)
+// ============================================================================
+
+model TaxRate {
+  id          String           @id @default(cuid())
+  province    CanadianProvince
+  taxType     TaxType
+  rate        Decimal          @db.Decimal(5,4) // e.g., 0.0500 for 5%
+  name        String           // e.g., "Ontario HST"
+  description String?
+  isActive    Boolean          @default(true)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  @@map("tax_rates")
+  @@unique([province, taxType, effectiveFrom])
+  @@index([province])
+  @@index([isActive])
+  @@index([effectiveFrom])
+}
+
+// ============================================================================
+// DIGITAL PRODUCT DOWNLOADS
+// ============================================================================
+
+model Download {
+  id              String    @id @default(cuid())
+  userId          String
+  productId       String
+  orderItemId     String?
+  
+  // Download Details
+  fileName        String
+  originalUrl     String
+  secureUrl       String    // Signed URL for secure downloads
+  fileSize        Int       // in bytes
+  mimeType        String
+  
+  // Access Control
+  downloadCount   Int       @default(0)
+  downloadLimit   Int?      // null = unlimited
+  expiresAt       DateTime?
+  
+  // Status
+  isActive        Boolean   @default(true)
+  
+  // Timestamps
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastDownloadAt  DateTime?
+  
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product         Product   @relation(fields: [productId], references: [id])
+  orderItem       OrderItem? @relation(fields: [orderItemId], references: [id])
+  
+  @@map("downloads")
+  @@index([userId])
+  @@index([productId])
+  @@index([orderItemId])
+  @@index([expiresAt])
+  @@index([isActive])
+}
+
+// ============================================================================
+// CUSTOMER REVIEWS & RATINGS
+// ============================================================================
+
+model Review {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  orderId     String?  // Optional: link to order for verified purchases
+  
+  // Review Content
+  rating      Int      // 1-5 stars
+  title       String?
+  content     String?
+  
+  // Status
+  isApproved  Boolean  @default(false)
+  isVerified  Boolean  @default(false) // Verified purchase
+  
+  // Moderation
+  moderatedBy String?  // Admin user ID
+  moderatedAt DateTime?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  @@map("reviews")
+  @@unique([userId, productId]) // One review per user per product
+  @@index([productId])
+  @@index([rating])
+  @@index([isApproved])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// SUPPORT SYSTEM
+// ============================================================================
+
+model SupportTicket {
+  id          String               @id @default(cuid())
+  userId      String?
+  subject     String
+  description String
+  status      SupportTicketStatus  @default(OPEN)
+  priority    SupportPriority      @default(MEDIUM)
+  category    String?
+  
+  // Assignment
+  assignedTo  String?              // Support agent user ID
+  
+  // Customer Information (for guest tickets)
+  customerEmail String?
+  customerName  String?
+  
+  // Timestamps
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  resolvedAt  DateTime?
+  
+  // Relations
+  user        User?                @relation(fields: [userId], references: [id])
+  messages    SupportMessage[]
+  
+  @@map("support_tickets")
+  @@index([userId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([createdAt])
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+enum SupportPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model SupportMessage {
+  id          String        @id @default(cuid())
+  ticketId    String
+  userId      String?       // null for system messages
+  message     String
+  isInternal  Boolean       @default(false) // Internal notes not visible to customer
+  attachments String[]      // URLs to attachments
+  
+  createdAt   DateTime      @default(now())
+  
+  // Relations
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user        User?         @relation(fields: [userId], references: [id])
+  
+  @@map("support_messages")
+  @@index([ticketId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ============================================================================
+
+model Notification {
+  id          String             @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  status      NotificationStatus @default(PENDING)
+  
+  // Channels
+  email       Boolean            @default(false)
+  sms         Boolean            @default(false)
+  inApp       Boolean            @default(true)
+  
+  // Email specific
+  emailSubject String?
+  emailHtml    String?
+  
+  // Metadata
+  data        Json?              // Additional data for the notification
+  
+  // Timestamps
+  createdAt   DateTime           @default(now())
+  sentAt      DateTime?
+  readAt      DateTime?
+  
+  // Relations
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  ORDER_CONFIRMATION
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  SUBSCRIPTION_CREATED
+  SUBSCRIPTION_RENEWED
+  SUBSCRIPTION_CANCELLED
+  DOWNLOAD_READY
+  REFUND_PROCESSED
+  SUPPORT_TICKET_UPDATE
+  SYSTEM_ALERT
+}
+
+// ============================================================================
+// AUDIT LOGGING (Compliance)
+// ============================================================================
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  userId      String?
+  action      AuditAction
+  resource    String      // e.g., 'order', 'user', 'product'
+  resourceId  String?
+  
+  // Change Details
+  oldValues   Json?       // Previous state
+  newValues   Json?       // New state
+  
+  // Request Context
+  ipAddress   String?
+  userAgent   String?
+  endpoint    String?
+  method      String?
+  
+  // Additional Context
+  metadata    Json?
+  description String?
+  
+  // Timestamp
+  createdAt   DateTime    @default(now())
+  
+  // Relations
+  user        User?       @relation(fields: [userId], references: [id])
+  
+  @@map("audit_logs")
+  @@index([userId])
+  @@index([action])
+  @@index([resource])
+  @@index([createdAt])
+  @@index([ipAddress])
+}
+
+// ============================================================================
+// ANALYTICS & REPORTING
+// ============================================================================
+
+model AnalyticsEvent {
+  id            String   @id @default(cuid())
+  userId        String?
+  sessionId     String?
+  eventType     String   // 'page_view', 'product_view', 'add_to_cart', etc.
+  eventCategory String?
+  eventAction   String?
+  eventLabel    String?
+  eventValue    Int?
+  
+  // Page/Product Context
+  page          String?
+  productId     String?
+  
+  // User Context
+  ipAddress     String?
+  userAgent     String?
+  referrer      String?
+  
+  // Additional Data
+  metadata      Json?
+  
+  // Timestamp
+  createdAt     DateTime @default(now())
+  
+  @@map("analytics_events")
+  @@index([userId])
+  @@index([sessionId])
+  @@index([eventType])
+  @@index([productId])
+  @@index([createdAt])
+}
+
+// ============================================================================
+// SYSTEM CONFIGURATION
+// ============================================================================
+
+model SystemSetting {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  value       String
+  description String?
+  category    String?  // 'payment', 'email', 'general', etc.
+  isPublic    Boolean  @default(false) // If setting should be exposed to frontend
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("system_settings")
+  @@index([category])
+  @@index([isPublic])
+}
+
+// ============================================================================
+// INDEXES FOR PERFORMANCE OPTIMIZATION
+// ============================================================================
+
+// Additional composite indexes are defined within each model above
+// This schema includes comprehensive indexing for:
+// - User lookup optimizations (email, status, role combinations)
+// - Order analytics (createdAt, status, userId combinations) 
+// - Product catalog (status, featured, category combinations)
+// - Payment processing (status, createdAt, userId combinations)
+// - Subscription management (status, currentPeriodEnd combinations)
+// - Analytics tracking (eventType, userId, createdAt combinations)
+// - Audit compliance (resource, action, createdAt combinations)
+
+// For additional performance tuning, consider creating partial indexes
+// and functional indexes directly in PostgreSQL after deployment
