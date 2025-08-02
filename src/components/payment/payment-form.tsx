@@ -1,21 +1,20 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { formatCAD } from "@/lib/utils";
-import { 
-  CreditCard, 
-  Shield, 
-  Lock, 
+import {
+  CreditCard,
+  Shield,
+  Lock,
   CheckCircle,
   AlertTriangle,
-  Info
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+  Plus,
+} from 'lucide-react';
+import * as React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { formatCAD, cn } from '@/lib/utils';
 
 interface PaymentMethod {
   id: string;
@@ -83,13 +82,13 @@ const CreditCardForm: React.FC<CreditCardFormProps> = ({
   const formatCardNumber = (value: string) => {
     const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
     const matches = v.match(/\d{4,16}/g);
-    const match = matches && matches[0] || '';
+    const match = (matches && matches[0]) || '';
     const parts = [];
-    
+
     for (let i = 0, len = match.length; i < len; i += 4) {
       parts.push(match.substring(i, i + 4));
     }
-    
+
     if (parts.length) {
       return parts.join(' ');
     } else {
@@ -111,7 +110,10 @@ const CreditCardForm: React.FC<CreditCardFormProps> = ({
     // Expiry validation
     if (!cardData.expiryMonth) {
       newErrors.expiryMonth = 'Month is required';
-    } else if (parseInt(cardData.expiryMonth) < 1 || parseInt(cardData.expiryMonth) > 12) {
+    } else if (
+      parseInt(cardData.expiryMonth) < 1 ||
+      parseInt(cardData.expiryMonth) > 12
+    ) {
       newErrors.expiryMonth = 'Invalid month';
     }
 
@@ -151,7 +153,7 @@ const CreditCardForm: React.FC<CreditCardFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-lg border border-destructive/20">
+        <div className="text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
@@ -160,7 +162,9 @@ const CreditCardForm: React.FC<CreditCardFormProps> = ({
       <Input
         label="Cardholder Name"
         value={cardData.cardholderName}
-        onChange={(e) => setCardData(prev => ({ ...prev, cardholderName: e.target.value }))}
+        onChange={e =>
+          setCardData(prev => ({ ...prev, cardholderName: e.target.value }))
+        }
         error={errors.cardholderName}
         placeholder="John Doe"
         disabled={isLoading}
@@ -170,10 +174,12 @@ const CreditCardForm: React.FC<CreditCardFormProps> = ({
       <Input
         label="Card Number"
         value={cardData.cardNumber}
-        onChange={(e) => setCardData(prev => ({ 
-          ...prev, 
-          cardNumber: formatCardNumber(e.target.value) 
-        }))}
+        onChange={e =>
+          setCardData(prev => ({
+            ...prev,
+            cardNumber: formatCardNumber(e.target.value),
+          }))
+        }
         error={errors.cardNumber}
         placeholder="1234 5678 9012 3456"
         maxLength={19}
@@ -185,7 +191,9 @@ const CreditCardForm: React.FC<CreditCardFormProps> = ({
         <Input
           label="MM"
           value={cardData.expiryMonth}
-          onChange={(e) => setCardData(prev => ({ ...prev, expiryMonth: e.target.value }))}
+          onChange={e =>
+            setCardData(prev => ({ ...prev, expiryMonth: e.target.value }))
+          }
           error={errors.expiryMonth}
           placeholder="12"
           maxLength={2}
@@ -196,7 +204,9 @@ const CreditCardForm: React.FC<CreditCardFormProps> = ({
         <Input
           label="YYYY"
           value={cardData.expiryYear}
-          onChange={(e) => setCardData(prev => ({ ...prev, expiryYear: e.target.value }))}
+          onChange={e =>
+            setCardData(prev => ({ ...prev, expiryYear: e.target.value }))
+          }
           error={errors.expiryYear}
           placeholder="2024"
           maxLength={4}
@@ -207,7 +217,9 @@ const CreditCardForm: React.FC<CreditCardFormProps> = ({
         <Input
           label="CVC"
           value={cardData.cvc}
-          onChange={(e) => setCardData(prev => ({ ...prev, cvc: e.target.value }))}
+          onChange={e =>
+            setCardData(prev => ({ ...prev, cvc: e.target.value }))
+          }
           error={errors.cvc}
           placeholder="123"
           maxLength={4}
@@ -221,11 +233,13 @@ const CreditCardForm: React.FC<CreditCardFormProps> = ({
           type="checkbox"
           id="save-card"
           checked={cardData.saveCard}
-          onChange={(e) => setCardData(prev => ({ ...prev, saveCard: e.target.checked }))}
-          className="rounded border-input"
+          onChange={e =>
+            setCardData(prev => ({ ...prev, saveCard: e.target.checked }))
+          }
+          className="border-input rounded"
           disabled={isLoading}
         />
-        <label htmlFor="save-card" className="text-sm text-muted-foreground">
+        <label htmlFor="save-card" className="text-muted-foreground text-sm">
           Save this card for future purchases
         </label>
       </div>
@@ -254,8 +268,10 @@ const PaymentMethodCard: React.FC<{
   return (
     <div
       className={cn(
-        "p-4 rounded-lg border-2 cursor-pointer transition-colors",
-        isSelected ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+        'cursor-pointer rounded-lg border-2 p-4 transition-colors',
+        isSelected
+          ? 'border-primary bg-primary/5'
+          : 'border-border hover:bg-muted/50'
       )}
       onClick={onSelect}
     >
@@ -266,22 +282,29 @@ const PaymentMethodCard: React.FC<{
             <p className="font-medium">
               {method.brand} •••• {method.last4}
             </p>
-            <p className="text-sm text-muted-foreground">
-              Expires {method.expiryMonth?.toString().padStart(2, '0')}/{method.expiryYear}
+            <p className="text-muted-foreground text-sm">
+              Expires {method.expiryMonth?.toString().padStart(2, '0')}/
+              {method.expiryYear}
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           {method.isDefault && (
-            <Badge variant="secondary" className="text-xs">Default</Badge>
+            <Badge variant="secondary" className="text-xs">
+              Default
+            </Badge>
           )}
-          <div className={cn(
-            "w-4 h-4 rounded-full border-2",
-            isSelected ? "border-primary bg-primary" : "border-muted-foreground"
-          )}>
+          <div
+            className={cn(
+              'h-4 w-4 rounded-full border-2',
+              isSelected
+                ? 'border-primary bg-primary'
+                : 'border-muted-foreground'
+            )}
+          >
             {isSelected && (
-              <CheckCircle className="w-full h-full text-primary-foreground" />
+              <CheckCircle className="text-primary-foreground h-full w-full" />
             )}
           </div>
         </div>
@@ -292,7 +315,7 @@ const PaymentMethodCard: React.FC<{
 
 const PaymentForm: React.FC<PaymentFormProps> = ({
   amount,
-  currency = "CAD",
+  currency = 'CAD',
   description,
   paymentMethods = [],
   selectedPaymentMethod,
@@ -301,15 +324,21 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   success = false,
   onSubmit,
   onPaymentMethodChange,
-  onAddPaymentMethod,
+  onAddPaymentMethod: _onAddPaymentMethod,
   className,
 }) => {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [showNewCardForm, setShowNewCardForm] = React.useState(paymentMethods.length === 0);
-  const [newCardData, setNewCardData] = React.useState<CreditCardData | null>(null);
+  const [showNewCardForm, setShowNewCardForm] = React.useState(
+    paymentMethods.length === 0
+  );
+  const [newCardData, setNewCardData] = React.useState<CreditCardData | null>(
+    null
+  );
 
   const handleSubmit = async () => {
-    if (!onSubmit) return;
+    if (!onSubmit) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -319,7 +348,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         currency,
         savePaymentMethod: newCardData?.saveCard || false,
       };
-      
+
       await onSubmit(paymentData);
     } finally {
       setIsSubmitting(false);
@@ -333,9 +362,9 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
 
   if (success) {
     return (
-      <Card className={cn("w-full max-w-md mx-auto", className)}>
+      <Card className={cn('mx-auto w-full max-w-md', className)}>
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="mx-auto mb-4 h-12 w-12 text-success">
+          <div className="text-success mx-auto mb-4 h-12 w-12">
             <CheckCircle className="h-full w-full" />
           </div>
           <h3 className="mb-2 text-lg font-semibold">Payment Successful!</h3>
@@ -343,7 +372,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             Your payment of {formatCAD(amount)} has been processed successfully.
           </p>
           {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
+            <p className="text-muted-foreground text-sm">{description}</p>
           )}
         </CardContent>
       </Card>
@@ -351,23 +380,23 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
   }
 
   return (
-    <Card className={cn("w-full max-w-md mx-auto", className)}>
+    <Card className={cn('mx-auto w-full max-w-md', className)}>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CreditCard className="h-5 w-5" />
           Payment Details
         </CardTitle>
         {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground text-sm">{description}</p>
         )}
       </CardHeader>
 
       <CardContent className="space-y-6">
         {/* Amount Display */}
-        <div className="p-4 bg-muted/50 rounded-lg">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Total Amount</span>
-            <span className="text-xl font-bold currency-cad">
+        <div className="bg-muted/50 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground text-sm">Total Amount</span>
+            <span className="currency-cad text-xl font-bold">
               {formatCAD(amount)}
             </span>
           </div>
@@ -377,7 +406,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         {paymentMethods.length > 0 && !showNewCardForm && (
           <div className="space-y-3">
             <h4 className="text-sm font-medium">Select Payment Method</h4>
-            {paymentMethods.map((method) => (
+            {paymentMethods.map(method => (
               <PaymentMethodCard
                 key={method.id}
                 method={method}
@@ -385,7 +414,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                 onSelect={() => onPaymentMethodChange?.(method.id)}
               />
             ))}
-            
+
             <Button
               variant="outline"
               className="w-full"
@@ -412,7 +441,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                 </Button>
               )}
             </div>
-            
+
             <CreditCardForm
               onSubmit={handleNewCardSubmit}
               isLoading={isLoading || isSubmitting}
@@ -436,7 +465,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         )}
 
         {/* Security Notice */}
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <div className="text-muted-foreground flex items-center justify-center gap-2 text-xs">
           <Shield className="h-3 w-3" />
           <span>Secured by Stripe • Your payment information is encrypted</span>
         </div>

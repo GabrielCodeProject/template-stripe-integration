@@ -4,16 +4,18 @@
  * Handles creation, updates, cancellations, and billing portal integration
  */
 
+import {
+  SubscriptionStatus,
+  CanadianProvince,
+  AuditAction,
+  NotificationType,
+} from '@prisma/client';
 import Stripe from 'stripe';
+
+import { calculateCanadianTax } from '@/lib/tax/canadian-tax';
+
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe/client';
-import { calculateCanadianTax } from '@/lib/tax/canadian-tax';
-import { 
-  SubscriptionStatus, 
-  CanadianProvince, 
-  AuditAction,
-  NotificationType 
-} from '@prisma/client';
 
 export interface CreateSubscriptionRequest {
   userId: string;
@@ -77,7 +79,7 @@ export const DEFAULT_DUNNING_CONFIG: DunningSettings = {
   retrySchedule: [3, 5, 7], // Retry after 3, 5, and 7 days
   gracePeriodDays: 7,
   sendEmailNotifications: true,
-  pauseSubscriptionOnFailure: false
+  pauseSubscriptionOnFailure: false,
 };
 
 /**
@@ -101,11 +103,11 @@ export class SubscriptionManager {
   }> {
     // Validate plan exists and is active
     const plan = await db.subscriptionPlan.findFirst({
-      where: { 
+      where: {
         id: request.planId,
-        isActive: true 
+        isActive: true,
       },
-      include: { product: true }
+      include: { product: true },
     });
 
     if (!plan) {
@@ -115,7 +117,7 @@ export class SubscriptionManager {
     // Get or create user
     const user = await db.user.findUnique({
       where: { id: request.userId },
-      include: { address: true }
+      include: { address: true },
     });
 
     if (!user) {
@@ -126,10 +128,10 @@ export class SubscriptionManager {
 
     // Create or update Stripe customer
     if (user.stripeCustomerId) {
-      stripeCustomer = await this.stripe.customers.retrieve(
+      stripeCustomer = (await this.stripe.customers.retrieve(
         user.stripeCustomerId
-      ) as Stripe.Customer;
-      
+      )) as Stripe.Customer;
+
       // Update customer if needed
       await this.stripe.customers.update(user.stripeCustomerId, {
         email: user.email,
@@ -140,9 +142,9 @@ export class SubscriptionManager {
           city: request.billingAddress.city,
           state: request.billingAddress.province,
           postal_code: request.billingAddress.postalCode,
-          country: request.billingAddress.country
+          country: request.billingAddress.country,
         },
-        phone: user.phone || undefined
+        phone: user.phone || undefined,
       });
     } else {
       // Create new customer
@@ -155,36 +157,36 @@ export class SubscriptionManager {
           city: request.billingAddress.city,
           state: request.billingAddress.province,
           postal_code: request.billingAddress.postalCode,
-          country: request.billingAddress.country
+          country: request.billingAddress.country,
         },
         phone: user.phone || undefined,
         metadata: {
           userId: user.id,
-          source: 'nextjs_template'
-        }
+          source: 'nextjs_template',
+        },
       });
 
       // Update user with Stripe customer ID
       await db.user.update({
         where: { id: user.id },
-        data: { stripeCustomerId: stripeCustomer.id }
+        data: { stripeCustomerId: stripeCustomer.id },
       });
     }
 
     // Attach payment method to customer
     await this.stripe.paymentMethods.attach(request.paymentMethodId, {
-      customer: stripeCustomer.id
+      customer: stripeCustomer.id,
     });
 
     // Set as default payment method
     await this.stripe.customers.update(stripeCustomer.id, {
       invoice_settings: {
-        default_payment_method: request.paymentMethodId
-      }
+        default_payment_method: request.paymentMethodId,
+      },
     });
 
     // Calculate taxes for the subscription
-    const taxCalculation = calculateCanadianTax(
+    const _taxCalculation = calculateCanadianTax(
       plan.price,
       request.billingAddress.province,
       'SUBSCRIPTION'
@@ -197,11 +199,8 @@ export class SubscriptionManager {
         where: {
           code: request.promoCode,
           isActive: true,
-          OR: [
-            { expiresAt: null },
-            { expiresAt: { gt: new Date() } }
-          ]
-        }
+          OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+        },
       });
 
       if (promoCode) {
@@ -213,26 +212,28 @@ export class SubscriptionManager {
     // Create subscription in Stripe
     const stripeSubscription = await this.stripe.subscriptions.create({
       customer: stripeCustomer.id,
-      items: [{
-        price: plan.stripePriceId,
-        quantity: 1
-      }],
+      items: [
+        {
+          price: plan.stripePriceId,
+          quantity: 1,
+        },
+      ],
       payment_behavior: 'default_incomplete',
       payment_settings: {
-        save_default_payment_method: 'on_subscription'
+        save_default_payment_method: 'on_subscription',
       },
       expand: ['latest_invoice.payment_intent'],
       trial_period_days: request.trialDays || plan.trialDays || undefined,
       coupon: couponId,
       automatic_tax: {
-        enabled: true
+        enabled: true,
       },
       metadata: {
         userId: user.id,
         planId: plan.id,
         taxProvince: request.billingAddress.province,
-        ...request.metadata
-      }
+        ...request.metadata,
+      },
     });
 
     // Store subscription in database
@@ -243,18 +244,22 @@ export class SubscriptionManager {
         stripeSubscriptionId: stripeSubscription.id,
         stripeCustomerId: stripeCustomer.id,
         status: stripeSubscription.status as SubscriptionStatus,
-        currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+        currentPeriodStart: new Date(
+          stripeSubscription.current_period_start * 1000
+        ),
+        currentPeriodEnd: new Date(
+          stripeSubscription.current_period_end * 1000
+        ),
         price: plan.price,
         quantity: 1,
-        trialStart: stripeSubscription.trial_start 
-          ? new Date(stripeSubscription.trial_start * 1000) 
+        trialStart: stripeSubscription.trial_start
+          ? new Date(stripeSubscription.trial_start * 1000)
           : null,
-        trialEnd: stripeSubscription.trial_end 
-          ? new Date(stripeSubscription.trial_end * 1000) 
+        trialEnd: stripeSubscription.trial_end
+          ? new Date(stripeSubscription.trial_end * 1000)
           : null,
-        metadata: request.metadata || {}
-      }
+        metadata: request.metadata || {},
+      },
     });
 
     // Update user address if provided
@@ -268,7 +273,7 @@ export class SubscriptionManager {
         city: request.billingAddress.city,
         province: request.billingAddress.province,
         postalCode: request.billingAddress.postalCode,
-        country: request.billingAddress.country
+        country: request.billingAddress.country,
       },
       create: {
         userId: user.id,
@@ -279,8 +284,8 @@ export class SubscriptionManager {
         city: request.billingAddress.city,
         province: request.billingAddress.province,
         postalCode: request.billingAddress.postalCode,
-        country: request.billingAddress.country
-      }
+        country: request.billingAddress.country,
+      },
     });
 
     // Create audit log
@@ -293,18 +298,19 @@ export class SubscriptionManager {
         newValues: {
           subscriptionId: stripeSubscription.id,
           planId: plan.id,
-          status: stripeSubscription.status
+          status: stripeSubscription.status,
         },
-        description: `Subscription created for plan ${plan.name}`
-      }
+        description: `Subscription created for plan ${plan.name}`,
+      },
     });
 
     return {
-      subscription: subscription,
+      subscription,
       customer: stripeCustomer,
-      setupIntent: stripeSubscription.status === 'incomplete' 
-        ? (stripeSubscription.latest_invoice as any)?.payment_intent
-        : undefined
+      setupIntent:
+        stripeSubscription.status === 'incomplete'
+          ? (stripeSubscription.latest_invoice as any)?.payment_intent
+          : undefined,
     };
   }
 
@@ -318,7 +324,7 @@ export class SubscriptionManager {
     // Get existing subscription
     const existingSubscription = await db.subscription.findFirst({
       where: { stripeSubscriptionId: request.subscriptionId },
-      include: { user: { include: { address: true } }, plan: true }
+      include: { user: { include: { address: true } }, plan: true },
     });
 
     if (!existingSubscription) {
@@ -327,9 +333,12 @@ export class SubscriptionManager {
 
     // Get new plan if changing
     let newPlan = existingSubscription.plan;
-    if (request.newPlanId && request.newPlanId !== existingSubscription.planId) {
+    if (
+      request.newPlanId &&
+      request.newPlanId !== existingSubscription.planId
+    ) {
       const plan = await db.subscriptionPlan.findFirst({
-        where: { id: request.newPlanId, isActive: true }
+        where: { id: request.newPlanId, isActive: true },
       });
       if (!plan) {
         throw new Error('New subscription plan not found or inactive');
@@ -347,11 +356,13 @@ export class SubscriptionManager {
 
     const updateData: Stripe.SubscriptionUpdateParams = {
       proration_behavior: request.prorationBehavior || 'create_prorations',
-      items: [{
-        id: stripeSubscription.items.data[0].id,
-        price: newPlan.stripePriceId,
-        quantity: request.quantity || 1
-      }]
+      items: [
+        {
+          id: stripeSubscription.items.data[0].id,
+          price: newPlan.stripePriceId,
+          quantity: request.quantity || 1,
+        },
+      ],
     };
 
     if (request.billingCycleAnchor === 'now') {
@@ -370,9 +381,13 @@ export class SubscriptionManager {
         planId: newPlan.id,
         price: newPlan.price,
         quantity: request.quantity || existingSubscription.quantity,
-        currentPeriodStart: new Date(updatedStripeSubscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(updatedStripeSubscription.current_period_end * 1000)
-      }
+        currentPeriodStart: new Date(
+          updatedStripeSubscription.current_period_start * 1000
+        ),
+        currentPeriodEnd: new Date(
+          updatedStripeSubscription.current_period_end * 1000
+        ),
+      },
     });
 
     // Create audit log
@@ -385,20 +400,20 @@ export class SubscriptionManager {
         oldValues: {
           planId: existingSubscription.planId,
           price: existingSubscription.price,
-          quantity: existingSubscription.quantity
+          quantity: existingSubscription.quantity,
         },
         newValues: {
           planId: newPlan.id,
           price: newPlan.price,
-          quantity: request.quantity || existingSubscription.quantity
+          quantity: request.quantity || existingSubscription.quantity,
         },
-        description: `Subscription updated from ${existingSubscription.plan.name} to ${newPlan.name}`
-      }
+        description: `Subscription updated from ${existingSubscription.plan.name} to ${newPlan.name}`,
+      },
     });
 
     return {
       subscription: updatedSubscription,
-      preview
+      preview,
     };
   }
 
@@ -416,7 +431,7 @@ export class SubscriptionManager {
     // Get existing subscription
     const existingSubscription = await db.subscription.findFirst({
       where: { stripeSubscriptionId: request.subscriptionId },
-      include: { user: true, plan: true }
+      include: { user: true, plan: true },
     });
 
     if (!existingSubscription) {
@@ -434,29 +449,29 @@ export class SubscriptionManager {
           cancel_at_period_end: true,
           cancellation_details: {
             comment: request.feedback,
-            feedback: request.cancellationReason as any
-          }
+            feedback: request.cancellationReason as any,
+          },
         }
       );
 
-      effectiveDate = new Date(updatedStripeSubscription.current_period_end * 1000);
+      effectiveDate = new Date(
+        updatedStripeSubscription.current_period_end * 1000
+      );
 
       // Update database
       await db.subscription.update({
         where: { id: existingSubscription.id },
         data: {
           cancelAtPeriodEnd: true,
-          canceledAt: new Date()
-        }
+          canceledAt: new Date(),
+        },
       });
     } else {
       // Cancel immediately
-      const canceledStripeSubscription = await this.stripe.subscriptions.cancel(
-        request.subscriptionId,
-        {
-          prorate: request.prorationBehavior === 'create_prorations'
-        }
-      );
+      const _canceledStripeSubscription =
+        await this.stripe.subscriptions.cancel(request.subscriptionId, {
+          prorate: request.prorationBehavior === 'create_prorations',
+        });
 
       effectiveDate = new Date();
 
@@ -466,20 +481,20 @@ export class SubscriptionManager {
         data: {
           status: SubscriptionStatus.CANCELLED,
           canceledAt: new Date(),
-          endedAt: new Date()
-        }
+          endedAt: new Date(),
+        },
       });
 
       // Calculate refund if prorating
       if (request.prorationBehavior === 'create_prorations') {
         const remainingDays = Math.ceil(
-          (existingSubscription.currentPeriodEnd.getTime() - Date.now()) / 
-          (1000 * 60 * 60 * 24)
+          (existingSubscription.currentPeriodEnd.getTime() - Date.now()) /
+            (1000 * 60 * 60 * 24)
         );
         const totalDays = Math.ceil(
-          (existingSubscription.currentPeriodEnd.getTime() - 
-           existingSubscription.currentPeriodStart.getTime()) / 
-          (1000 * 60 * 60 * 24)
+          (existingSubscription.currentPeriodEnd.getTime() -
+            existingSubscription.currentPeriodStart.getTime()) /
+            (1000 * 60 * 60 * 24)
         );
         refundAmount = Math.round(
           (existingSubscription.price * remainingDays) / totalDays
@@ -493,7 +508,7 @@ export class SubscriptionManager {
         userId: existingSubscription.userId,
         type: NotificationType.SUBSCRIPTION_CANCELLED,
         title: 'Subscription Cancelled',
-        message: request.cancelAtPeriodEnd 
+        message: request.cancelAtPeriodEnd
           ? `Your ${existingSubscription.plan.name} subscription will end on ${effectiveDate.toLocaleDateString()}.`
           : `Your ${existingSubscription.plan.name} subscription has been cancelled.`,
         email: true,
@@ -503,9 +518,9 @@ export class SubscriptionManager {
           planName: existingSubscription.plan.name,
           effectiveDate: effectiveDate.toISOString(),
           immediate: !request.cancelAtPeriodEnd,
-          refundAmount: refundAmount || 0
-        }
-      }
+          refundAmount: refundAmount || 0,
+        },
+      },
     });
 
     // Create audit log
@@ -516,13 +531,15 @@ export class SubscriptionManager {
         resource: 'subscription',
         resourceId: existingSubscription.id,
         oldValues: { status: existingSubscription.status },
-        newValues: { 
-          status: request.cancelAtPeriodEnd ? 'CANCELLED_AT_PERIOD_END' : 'CANCELLED',
+        newValues: {
+          status: request.cancelAtPeriodEnd
+            ? 'CANCELLED_AT_PERIOD_END'
+            : 'CANCELLED',
           cancelledAt: new Date().toISOString(),
-          reason: request.cancellationReason
+          reason: request.cancellationReason,
         },
-        description: `Subscription cancelled - ${request.cancelAtPeriodEnd ? 'at period end' : 'immediately'}`
-      }
+        description: `Subscription cancelled - ${request.cancelAtPeriodEnd ? 'at period end' : 'immediately'}`,
+      },
     });
 
     return {
@@ -530,8 +547,8 @@ export class SubscriptionManager {
       cancellationDetails: {
         immediate: !request.cancelAtPeriodEnd,
         effectiveDate,
-        refundAmount
-      }
+        refundAmount,
+      },
     };
   }
 
@@ -541,7 +558,7 @@ export class SubscriptionManager {
   async reactivateSubscription(subscriptionId: string): Promise<any> {
     const existingSubscription = await db.subscription.findFirst({
       where: { stripeSubscriptionId: subscriptionId },
-      include: { user: true, plan: true }
+      include: { user: true, plan: true },
     });
 
     if (!existingSubscription) {
@@ -564,8 +581,8 @@ export class SubscriptionManager {
       data: {
         status: reactivatedSubscription.status as SubscriptionStatus,
         cancelAtPeriodEnd: false,
-        canceledAt: null
-      }
+        canceledAt: null,
+      },
     });
 
     // Create notification
@@ -578,10 +595,10 @@ export class SubscriptionManager {
         email: true,
         emailSubject: 'Subscription Reactivated',
         data: {
-          subscriptionId: subscriptionId,
-          planName: existingSubscription.plan.name
-        }
-      }
+          subscriptionId,
+          planName: existingSubscription.plan.name,
+        },
+      },
     });
 
     return updatedSubscription;
@@ -590,10 +607,12 @@ export class SubscriptionManager {
   /**
    * Preview subscription changes before applying them
    */
-  async previewSubscriptionChange(request: UpdateSubscriptionRequest): Promise<SubscriptionPreview> {
+  async previewSubscriptionChange(
+    request: UpdateSubscriptionRequest
+  ): Promise<SubscriptionPreview> {
     const subscription = await db.subscription.findFirst({
       where: { stripeSubscriptionId: request.subscriptionId },
-      include: { user: { include: { address: true } }, plan: true }
+      include: { user: { include: { address: true } }, plan: true },
     });
 
     if (!subscription) {
@@ -603,21 +622,27 @@ export class SubscriptionManager {
     let newPlan = subscription.plan;
     if (request.newPlanId) {
       const plan = await db.subscriptionPlan.findFirst({
-        where: { id: request.newPlanId }
+        where: { id: request.newPlanId },
       });
-      if (plan) newPlan = plan;
+      if (plan) {
+        newPlan = plan;
+      }
     }
 
     // Get upcoming invoice preview from Stripe
     const upcomingInvoice = await this.stripe.invoices.retrieveUpcoming({
       customer: subscription.stripeCustomerId,
       subscription: request.subscriptionId,
-      subscription_items: [{
-        id: (await this.stripe.subscriptions.retrieve(request.subscriptionId)).items.data[0].id,
-        price: newPlan.stripePriceId,
-        quantity: request.quantity || 1
-      }],
-      subscription_proration_behavior: request.prorationBehavior || 'create_prorations'
+      subscription_items: [
+        {
+          id: (await this.stripe.subscriptions.retrieve(request.subscriptionId))
+            .items.data[0].id,
+          price: newPlan.stripePriceId,
+          quantity: request.quantity || 1,
+        },
+      ],
+      subscription_proration_behavior:
+        request.prorationBehavior || 'create_prorations',
     });
 
     // Calculate taxes
@@ -637,18 +662,21 @@ export class SubscriptionManager {
       immediateCharge: upcomingInvoice.amount_due,
       nextInvoiceAmount: newPlan.price + taxCalculation.totalTax,
       nextInvoiceDate: new Date(upcomingInvoice.period_end * 1000),
-      taxBreakdown: taxCalculation.breakdown
+      taxBreakdown: taxCalculation.breakdown,
     };
   }
 
   /**
    * Get subscription billing portal URL
    */
-  async createPortalSession(customerId: string, returnUrl: string): Promise<string> {
+  async createPortalSession(
+    customerId: string,
+    returnUrl: string
+  ): Promise<string> {
     const portalSession = await this.stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: returnUrl,
-      configuration: await this.getPortalConfiguration()
+      configuration: await this.getPortalConfiguration(),
     });
 
     return portalSession.url;
@@ -663,10 +691,10 @@ export class SubscriptionManager {
     config: Partial<DunningSettings> = {}
   ): Promise<void> {
     const dunningConfig = { ...DEFAULT_DUNNING_CONFIG, ...config };
-    
+
     const subscription = await db.subscription.findFirst({
       where: { stripeSubscriptionId: subscriptionId },
-      include: { user: true, plan: true }
+      include: { user: true, plan: true },
     });
 
     if (!subscription) {
@@ -676,7 +704,7 @@ export class SubscriptionManager {
     // Update subscription status
     await db.subscription.update({
       where: { id: subscription.id },
-      data: { status: SubscriptionStatus.PAST_DUE }
+      data: { status: SubscriptionStatus.PAST_DUE },
     });
 
     // Create dunning process record
@@ -689,10 +717,10 @@ export class SubscriptionManager {
         newValues: {
           status: 'PAST_DUE',
           dunningStarted: new Date().toISOString(),
-          invoiceId: invoiceId
+          invoiceId,
         },
-        description: 'Dunning process initiated for failed payment'
-      }
+        description: 'Dunning process initiated for failed payment',
+      },
     });
 
     // Send immediate notification
@@ -706,18 +734,20 @@ export class SubscriptionManager {
           email: true,
           emailSubject: 'Payment Failed - Action Required',
           data: {
-            subscriptionId: subscriptionId,
+            subscriptionId,
             planName: subscription.plan.name,
-            invoiceId: invoiceId,
+            invoiceId,
             retryAttempts: dunningConfig.maxRetryAttempts,
-            gracePeriod: dunningConfig.gracePeriodDays
-          }
-        }
+            gracePeriod: dunningConfig.gracePeriodDays,
+          },
+        },
       });
     }
 
     // Schedule retry attempts (in production, use a job queue)
-    console.log(`Scheduled ${dunningConfig.maxRetryAttempts} retry attempts for subscription ${subscriptionId}`);
+    console.log(
+      `Scheduled ${dunningConfig.maxRetryAttempts} retry attempts for subscription ${subscriptionId}`
+    );
   }
 
   /**
@@ -725,7 +755,7 @@ export class SubscriptionManager {
    */
   private async getOrCreateStripeCoupon(promoCode: any): Promise<string> {
     const couponId = `promo_${promoCode.code}`;
-    
+
     try {
       await this.stripe.coupons.retrieve(couponId);
       return couponId;
@@ -734,7 +764,7 @@ export class SubscriptionManager {
       const couponData: Stripe.CouponCreateParams = {
         id: couponId,
         name: promoCode.name,
-        duration: 'once' // Modify based on your promo code logic
+        duration: 'once', // Modify based on your promo code logic
       };
 
       if (promoCode.type === 'PERCENTAGE') {
@@ -762,44 +792,46 @@ export class SubscriptionManager {
    */
   private async getPortalConfiguration(): Promise<string> {
     // In production, you might want to cache this or create it once
-    const configuration = await this.stripe.billingPortal.configurations.create({
-      business_profile: {
-        headline: 'Manage your subscription',
-        privacy_policy_url: process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL,
-        terms_of_service_url: process.env.NEXT_PUBLIC_TERMS_OF_SERVICE_URL
-      },
-      features: {
-        customer_update: {
-          enabled: true,
-          allowed_updates: ['email', 'address', 'phone', 'tax_id']
+    const configuration = await this.stripe.billingPortal.configurations.create(
+      {
+        business_profile: {
+          headline: 'Manage your subscription',
+          privacy_policy_url: process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL,
+          terms_of_service_url: process.env.NEXT_PUBLIC_TERMS_OF_SERVICE_URL,
         },
-        invoice_history: { enabled: true },
-        payment_method_update: { enabled: true },
-        subscription_cancel: {
-          enabled: true,
-          mode: 'at_period_end',
-          cancellation_reason: {
+        features: {
+          customer_update: {
             enabled: true,
-            options: [
-              'too_expensive',
-              'missing_features',
-              'switched_service',
-              'unused',
-              'customer_service',
-              'too_complex',
-              'low_quality',
-              'other'
-            ]
-          }
+            allowed_updates: ['email', 'address', 'phone', 'tax_id'],
+          },
+          invoice_history: { enabled: true },
+          payment_method_update: { enabled: true },
+          subscription_cancel: {
+            enabled: true,
+            mode: 'at_period_end',
+            cancellation_reason: {
+              enabled: true,
+              options: [
+                'too_expensive',
+                'missing_features',
+                'switched_service',
+                'unused',
+                'customer_service',
+                'too_complex',
+                'low_quality',
+                'other',
+              ],
+            },
+          },
+          subscription_pause: { enabled: false },
+          subscription_update: {
+            enabled: true,
+            default_allowed_updates: ['price', 'quantity'],
+            proration_behavior: 'create_prorations',
+          },
         },
-        subscription_pause: { enabled: false },
-        subscription_update: {
-          enabled: true,
-          default_allowed_updates: ['price', 'quantity'],
-          proration_behavior: 'create_prorations'
-        }
       }
-    });
+    );
 
     return configuration.id;
   }

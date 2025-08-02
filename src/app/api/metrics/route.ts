@@ -1,124 +1,126 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { Redis } from 'ioredis'
+import { PrismaClient } from '@prisma/client';
+import { Redis } from 'ioredis';
+import { NextResponse } from 'next/server';
 
-const prisma = new PrismaClient()
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
+const prisma = new PrismaClient();
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
 
 interface Metrics {
-  timestamp: string
+  timestamp: string;
   application: {
-    uptime: number
-    version: string
-    environment: string
-    nodeVersion: string
-  }
+    uptime: number;
+    version: string;
+    environment: string;
+    nodeVersion: string;
+  };
   system: {
     memory: {
-      used: number
-      total: number
-      free: number
-      usage: number
-    }
+      used: number;
+      total: number;
+      free: number;
+      usage: number;
+    };
     cpu: {
-      usage: number
-    }
+      usage: number;
+    };
     eventLoop: {
-      lag: number
-    }
-  }
+      lag: number;
+    };
+  };
   database: {
-    connectionCount: number
-    queriesPerSecond: number
-    avgResponseTime: number
-  }
+    connectionCount: number;
+    queriesPerSecond: number;
+    avgResponseTime: number;
+  };
   redis: {
-    connectionCount: number
-    memoryUsage: number
-    keyCount: number
-    commandsProcessed: number
-  }
+    connectionCount: number;
+    memoryUsage: number;
+    keyCount: number;
+    commandsProcessed: number;
+  };
   http: {
-    requestCount: number
-    averageResponseTime: number
-    errorRate: number
-  }
+    requestCount: number;
+    averageResponseTime: number;
+    errorRate: number;
+  };
   business: {
-    activeUsers: number
-    paymentsProcessed: number
-    revenue: number
-  }
+    activeUsers: number;
+    paymentsProcessed: number;
+    revenue: number;
+  };
 }
 
 // Helper function to get event loop lag
 function getEventLoopLag(): Promise<number> {
-  return new Promise((resolve) => {
-    const start = process.hrtime()
+  return new Promise(resolve => {
+    const start = process.hrtime();
     setImmediate(() => {
-      const delta = process.hrtime(start)
-      const lag = delta[0] * 1000 + delta[1] * 1e-6
-      resolve(lag)
-    })
-  })
+      const delta = process.hrtime(start);
+      const lag = delta[0] * 1000 + delta[1] * 1e-6;
+      resolve(lag);
+    });
+  });
 }
 
 // Get database metrics
 async function getDatabaseMetrics() {
   try {
     // Get active connections
-    const connectionResult = await prisma.$queryRaw`
+    const connectionResult = (await prisma.$queryRaw`
       SELECT count(*) as active_connections 
       FROM pg_stat_activity 
       WHERE state = 'active'
-    ` as any[]
-    
+    `) as any[];
+
     // Get query statistics (if pg_stat_statements is available)
-    const queryStatsResult = await prisma.$queryRaw`
+    const queryStatsResult = (await prisma.$queryRaw`
       SELECT 
         COALESCE(sum(calls), 0) as total_calls,
         COALESCE(avg(mean_exec_time), 0) as avg_time
       FROM pg_stat_statements 
       WHERE queryid IS NOT NULL
-    `.catch(() => [{ total_calls: 0, avg_time: 0 }]) as any[]
-    
+    `.catch(() => [{ total_calls: 0, avg_time: 0 }])) as any[];
+
     return {
       connectionCount: Number(connectionResult[0]?.active_connections || 0),
       queriesPerSecond: Number(queryStatsResult[0]?.total_calls || 0),
-      avgResponseTime: Number(queryStatsResult[0]?.avg_time || 0)
-    }
+      avgResponseTime: Number(queryStatsResult[0]?.avg_time || 0),
+    };
   } catch (error) {
     return {
       connectionCount: 0,
       queriesPerSecond: 0,
-      avgResponseTime: 0
-    }
+      avgResponseTime: 0,
+    };
   }
 }
 
 // Get Redis metrics
 async function getRedisMetrics() {
   try {
-    const info = await redis.info()
-    const infoLines = info.split('\r\n')
-    
+    const info = await redis.info();
+    const infoLines = info.split('\r\n');
+
     const getInfoValue = (key: string): string => {
-      const line = infoLines.find(l => l.startsWith(`${key}:`))
-      return line ? line.split(':')[1] : '0'
-    }
-    
+      const line = infoLines.find(l => l.startsWith(`${key}:`));
+      return line ? line.split(':')[1] : '0';
+    };
+
     return {
       connectionCount: parseInt(getInfoValue('connected_clients')),
       memoryUsage: parseInt(getInfoValue('used_memory')),
-      keyCount: parseInt(getInfoValue('db0')?.split(',')[0]?.split('=')[1] || '0'),
-      commandsProcessed: parseInt(getInfoValue('total_commands_processed'))
-    }
+      keyCount: parseInt(
+        getInfoValue('db0')?.split(',')[0]?.split('=')[1] || '0'
+      ),
+      commandsProcessed: parseInt(getInfoValue('total_commands_processed')),
+    };
   } catch (error) {
     return {
       connectionCount: 0,
       memoryUsage: 0,
       keyCount: 0,
-      commandsProcessed: 0
-    }
+      commandsProcessed: 0,
+    };
   }
 }
 
@@ -126,33 +128,33 @@ async function getRedisMetrics() {
 async function getBusinessMetrics() {
   try {
     // Active users in the last 24 hours (example - adjust based on your schema)
-    const activeUsers = await prisma.$queryRaw`
+    const activeUsers = (await prisma.$queryRaw`
       SELECT COUNT(DISTINCT user_id) as count 
       FROM user_sessions 
       WHERE created_at > NOW() - INTERVAL '24 hours'
-    `.catch(() => [{ count: 0 }]) as any[]
-    
+    `.catch(() => [{ count: 0 }])) as any[];
+
     // Payments processed today (example - adjust based on your schema)
-    const paymentsToday = await prisma.$queryRaw`
+    const paymentsToday = (await prisma.$queryRaw`
       SELECT 
         COUNT(*) as count,
         COALESCE(SUM(amount), 0) as total_amount
       FROM payments 
       WHERE created_at >= CURRENT_DATE
       AND status = 'succeeded'
-    `.catch(() => [{ count: 0, total_amount: 0 }]) as any[]
-    
+    `.catch(() => [{ count: 0, total_amount: 0 }])) as any[];
+
     return {
       activeUsers: Number(activeUsers[0]?.count || 0),
       paymentsProcessed: Number(paymentsToday[0]?.count || 0),
-      revenue: Number(paymentsToday[0]?.total_amount || 0)
-    }
+      revenue: Number(paymentsToday[0]?.total_amount || 0),
+    };
   } catch (error) {
     return {
       activeUsers: 0,
       paymentsProcessed: 0,
-      revenue: 0
-    }
+      revenue: 0,
+    };
   }
 }
 
@@ -160,104 +162,115 @@ async function getBusinessMetrics() {
 async function getHttpMetrics() {
   try {
     // Get metrics from Redis (stored by middleware)
-    const requestCount = await redis.get('metrics:http:requests:total') || '0'
-    const totalResponseTime = await redis.get('metrics:http:response_time:total') || '0'
-    const errorCount = await redis.get('metrics:http:errors:total') || '0'
-    
-    const requests = parseInt(requestCount)
-    const errors = parseInt(errorCount)
-    const avgResponseTime = requests > 0 ? parseInt(totalResponseTime) / requests : 0
-    const errorRate = requests > 0 ? (errors / requests) * 100 : 0
-    
+    const requestCount =
+      (await redis.get('metrics:http:requests:total')) || '0';
+    const totalResponseTime =
+      (await redis.get('metrics:http:response_time:total')) || '0';
+    const errorCount = (await redis.get('metrics:http:errors:total')) || '0';
+
+    const requests = parseInt(requestCount);
+    const errors = parseInt(errorCount);
+    const avgResponseTime =
+      requests > 0 ? parseInt(totalResponseTime) / requests : 0;
+    const errorRate = requests > 0 ? (errors / requests) * 100 : 0;
+
     return {
       requestCount: requests,
       averageResponseTime: avgResponseTime,
-      errorRate: errorRate
-    }
+      errorRate,
+    };
   } catch (error) {
     return {
       requestCount: 0,
       averageResponseTime: 0,
-      errorRate: 0
-    }
+      errorRate: 0,
+    };
   }
 }
 
 export async function GET() {
   try {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     // Get system metrics
-    const memUsage = process.memoryUsage()
-    const eventLoopLag = await getEventLoopLag()
-    
+    const memUsage = process.memoryUsage();
+    const eventLoopLag = await getEventLoopLag();
+
     // Get external metrics
-    const [dbMetrics, redisMetrics, businessMetrics, httpMetrics] = await Promise.all([
-      getDatabaseMetrics(),
-      getRedisMetrics(),
-      getBusinessMetrics(),
-      getHttpMetrics()
-    ])
-    
+    const [dbMetrics, redisMetrics, businessMetrics, httpMetrics] =
+      await Promise.all([
+        getDatabaseMetrics(),
+        getRedisMetrics(),
+        getBusinessMetrics(),
+        getHttpMetrics(),
+      ]);
+
     const metrics: Metrics = {
       timestamp: new Date().toISOString(),
       application: {
         uptime: Math.floor(process.uptime()),
-        version: process.env.npm_package_version || process.env.APP_VERSION || 'unknown',
+        version:
+          process.env.npm_package_version ||
+          process.env.APP_VERSION ||
+          'unknown',
         environment: process.env.NODE_ENV || 'unknown',
-        nodeVersion: process.version
+        nodeVersion: process.version,
       },
       system: {
         memory: {
           used: Math.round(memUsage.heapUsed / 1024 / 1024),
           total: Math.round(memUsage.heapTotal / 1024 / 1024),
-          free: Math.round((memUsage.heapTotal - memUsage.heapUsed) / 1024 / 1024),
-          usage: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)
+          free: Math.round(
+            (memUsage.heapTotal - memUsage.heapUsed) / 1024 / 1024
+          ),
+          usage: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100),
         },
         cpu: {
-          usage: 0 // CPU usage calculation would require additional monitoring
+          usage: 0, // CPU usage calculation would require additional monitoring
         },
         eventLoop: {
-          lag: Math.round(eventLoopLag)
-        }
+          lag: Math.round(eventLoopLag),
+        },
       },
       database: dbMetrics,
       redis: redisMetrics,
       http: httpMetrics,
-      business: businessMetrics
-    }
-    
+      business: businessMetrics,
+    };
+
     // Cache metrics for a short time
-    await redis.setex('metrics:latest', 30, JSON.stringify(metrics))
-    
+    await redis.setex('metrics:latest', 30, JSON.stringify(metrics));
+
     return NextResponse.json(metrics, {
       headers: {
         'Cache-Control': 'public, max-age=30',
-        'X-Metrics-Generation-Time': `${Date.now() - startTime}ms`
-      }
-    })
-    
+        'X-Metrics-Generation-Time': `${Date.now() - startTime}ms`,
+      },
+    });
   } catch (error) {
-    console.error('Metrics collection failed:', error)
-    
-    return NextResponse.json({
-      error: 'Failed to collect metrics',
-      timestamp: new Date().toISOString()
-    }, { 
-      status: 500,
-      headers: {
-        'Cache-Control': 'no-cache'
+    console.error('Metrics collection failed:', error);
+
+    return NextResponse.json(
+      {
+        error: 'Failed to collect metrics',
+        timestamp: new Date().toISOString(),
+      },
+      {
+        status: 500,
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
       }
-    })
+    );
   }
 }
 
 // Prometheus-style metrics endpoint
 export async function POST() {
   try {
-    const metrics = await GET()
-    const metricsData = await metrics.json() as Metrics
-    
+    const metrics = await GET();
+    const metricsData = (await metrics.json()) as Metrics;
+
     // Convert to Prometheus format
     const prometheusMetrics = `
 # HELP app_uptime_seconds Application uptime in seconds
@@ -315,21 +328,20 @@ business_payments_processed_today ${metricsData.business.paymentsProcessed}
 # HELP business_revenue_today_cents Revenue today in cents
 # TYPE business_revenue_today_cents counter
 business_revenue_today_cents ${metricsData.business.revenue}
-    `.trim()
-    
+    `.trim();
+
     return new Response(prometheusMetrics, {
       headers: {
         'Content-Type': 'text/plain; version=0.0.4; charset=utf-8',
-        'Cache-Control': 'no-cache'
-      }
-    })
-    
+        'Cache-Control': 'no-cache',
+      },
+    });
   } catch (error) {
     return new Response('# Error collecting metrics\n', {
       status: 500,
       headers: {
-        'Content-Type': 'text/plain'
-      }
-    })
+        'Content-Type': 'text/plain',
+      },
+    });
   }
 }

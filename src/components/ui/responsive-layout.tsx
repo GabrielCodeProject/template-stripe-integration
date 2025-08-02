@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Menu, X, ChevronLeft, Home } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Menu, X, ChevronLeft, Home } from 'lucide-react';
+import * as React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -33,29 +33,33 @@ interface PageHeaderProps {
 interface GridLayoutProps {
   children: React.ReactNode;
   columns?: 1 | 2 | 3 | 4 | 6 | 12;
-  gap?: "sm" | "md" | "lg" | "xl";
+  gap?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
 interface StackProps {
   children: React.ReactNode;
-  direction?: "horizontal" | "vertical";
-  spacing?: "xs" | "sm" | "md" | "lg" | "xl";
-  align?: "start" | "center" | "end" | "stretch";
-  justify?: "start" | "center" | "end" | "between" | "around" | "evenly";
+  direction?: 'horizontal' | 'vertical';
+  spacing?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  align?: 'start' | 'center' | 'end' | 'stretch';
+  justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
   wrap?: boolean;
   className?: string;
 }
 
 interface ContainerProps {
   children: React.ReactNode;
-  size?: "sm" | "md" | "lg" | "xl" | "full";
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   center?: boolean;
   className?: string;
 }
 
 // Mobile-first responsive menu
-const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, children }) => {
+const MobileMenu: React.FC<MobileMenuProps> = ({
+  isOpen,
+  onClose,
+  children,
+}) => {
   React.useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -68,20 +72,22 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, children }) =>
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black/50" 
+      <div
+        className="fixed inset-0 bg-black/50"
         onClick={onClose}
         aria-hidden="true"
       />
-      
+
       {/* Menu */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-background border-r shadow-lg">
-        <div className="flex items-center justify-between p-4 border-b">
+      <div className="bg-background fixed inset-y-0 left-0 w-64 border-r shadow-lg">
+        <div className="flex items-center justify-between border-b p-4">
           <span className="font-semibold">Menu</span>
           <Button
             variant="ghost"
@@ -92,10 +98,8 @@ const MobileMenu: React.FC<MobileMenuProps> = ({ isOpen, onClose, children }) =>
             <X className="h-4 w-4" />
           </Button>
         </div>
-        
-        <div className="overflow-y-auto h-full pb-16">
-          {children}
-        </div>
+
+        <div className="h-full overflow-y-auto pb-16">{children}</div>
       </div>
     </div>
   );
@@ -112,10 +116,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   className,
 }) => {
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn('space-y-4', className)}>
       {/* Breadcrumbs */}
       {breadcrumbs && breadcrumbs.length > 0 && (
-        <nav className="flex items-center space-x-1 text-sm text-muted-foreground">
+        <nav className="text-muted-foreground flex items-center space-x-1 text-sm">
           <Home className="h-4 w-4" />
           {breadcrumbs.map((crumb, index) => (
             <React.Fragment key={index}>
@@ -148,7 +152,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
-          
+
           <div>
             <h1 className="text-h1">{title}</h1>
             {description && (
@@ -160,9 +164,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({
         </div>
 
         {actions && (
-          <div className="flex items-center space-x-2">
-            {actions}
-          </div>
+          <div className="flex items-center space-x-2">{actions}</div>
         )}
       </div>
     </div>
@@ -173,27 +175,29 @@ const PageHeader: React.FC<PageHeaderProps> = ({
 const GridLayout: React.FC<GridLayoutProps> = ({
   children,
   columns = 3,
-  gap = "md",
+  gap = 'md',
   className,
 }) => {
   const gapClasses = {
-    sm: "gap-2",
-    md: "gap-4",
-    lg: "gap-6",
-    xl: "gap-8",
+    sm: 'gap-2',
+    md: 'gap-4',
+    lg: 'gap-6',
+    xl: 'gap-8',
   };
 
   const columnClasses = {
-    1: "grid-cols-1",
-    2: "grid-cols-1 sm:grid-cols-2",
-    3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
-    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4",
-    6: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6",
-    12: "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-12",
+    1: 'grid-cols-1',
+    2: 'grid-cols-1 sm:grid-cols-2',
+    3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
+    4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+    6: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6',
+    12: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-12',
   };
 
   return (
-    <div className={cn("grid", columnClasses[columns], gapClasses[gap], className)}>
+    <div
+      className={cn('grid', columnClasses[columns], gapClasses[gap], className)}
+    >
       {children}
     </div>
   );
@@ -202,46 +206,46 @@ const GridLayout: React.FC<GridLayoutProps> = ({
 // Stack layout component
 const Stack: React.FC<StackProps> = ({
   children,
-  direction = "vertical",
-  spacing = "md",
-  align = "stretch",
-  justify = "start",
+  direction = 'vertical',
+  spacing = 'md',
+  align = 'stretch',
+  justify = 'start',
   wrap = false,
   className,
 }) => {
   const spacingClasses = {
-    xs: direction === "horizontal" ? "space-x-1" : "space-y-1",
-    sm: direction === "horizontal" ? "space-x-2" : "space-y-2",
-    md: direction === "horizontal" ? "space-x-4" : "space-y-4",
-    lg: direction === "horizontal" ? "space-x-6" : "space-y-6",
-    xl: direction === "horizontal" ? "space-x-8" : "space-y-8",
+    xs: direction === 'horizontal' ? 'space-x-1' : 'space-y-1',
+    sm: direction === 'horizontal' ? 'space-x-2' : 'space-y-2',
+    md: direction === 'horizontal' ? 'space-x-4' : 'space-y-4',
+    lg: direction === 'horizontal' ? 'space-x-6' : 'space-y-6',
+    xl: direction === 'horizontal' ? 'space-x-8' : 'space-y-8',
   };
 
   const alignClasses = {
-    start: "items-start",
-    center: "items-center",
-    end: "items-end",
-    stretch: "items-stretch",
+    start: 'items-start',
+    center: 'items-center',
+    end: 'items-end',
+    stretch: 'items-stretch',
   };
 
   const justifyClasses = {
-    start: "justify-start",
-    center: "justify-center",
-    end: "justify-end",
-    between: "justify-between",
-    around: "justify-around",
-    evenly: "justify-evenly",
+    start: 'justify-start',
+    center: 'justify-center',
+    end: 'justify-end',
+    between: 'justify-between',
+    around: 'justify-around',
+    evenly: 'justify-evenly',
   };
 
   return (
     <div
       className={cn(
-        "flex",
-        direction === "horizontal" ? "flex-row" : "flex-col",
+        'flex',
+        direction === 'horizontal' ? 'flex-row' : 'flex-col',
         spacingClasses[spacing],
         alignClasses[align],
         justifyClasses[justify],
-        wrap && "flex-wrap",
+        wrap && 'flex-wrap',
         className
       )}
     >
@@ -253,24 +257,24 @@ const Stack: React.FC<StackProps> = ({
 // Container component
 const Container: React.FC<ContainerProps> = ({
   children,
-  size = "lg",
+  size = 'lg',
   center = true,
   className,
 }) => {
   const sizeClasses = {
-    sm: "max-w-sm",
-    md: "max-w-4xl",
-    lg: "max-w-6xl",
-    xl: "max-w-7xl",
-    full: "max-w-full",
+    sm: 'max-w-sm',
+    md: 'max-w-4xl',
+    lg: 'max-w-6xl',
+    xl: 'max-w-7xl',
+    full: 'max-w-full',
   };
 
   return (
     <div
       className={cn(
-        "w-full px-4 sm:px-6 lg:px-8",
+        'w-full px-4 sm:px-6 lg:px-8',
         sizeClasses[size],
-        center && "mx-auto",
+        center && 'mx-auto',
         className
       )}
     >
@@ -290,10 +294,10 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   return (
-    <div className={cn("min-h-screen bg-background", className)}>
+    <div className={cn('bg-background min-h-screen', className)}>
       {/* Header */}
       {header && (
-        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 border-b backdrop-blur">
           <Container>
             <div className="flex h-16 items-center justify-between">
               {sidebar && (
@@ -316,10 +320,8 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
       <div className="flex">
         {/* Sidebar - Desktop */}
         {sidebar && (
-          <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 lg:pt-16 lg:border-r">
-            <div className="flex-1 overflow-y-auto py-6 px-4">
-              {sidebar}
-            </div>
+          <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:border-r lg:pt-16">
+            <div className="flex-1 overflow-y-auto px-4 py-6">{sidebar}</div>
           </aside>
         )}
 
@@ -329,35 +331,29 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
             isOpen={isMobileMenuOpen}
             onClose={() => setIsMobileMenuOpen(false)}
           >
-            <div className="p-4">
-              {sidebar}
-            </div>
+            <div className="p-4">{sidebar}</div>
           </MobileMenu>
         )}
 
         {/* Main content */}
         <main
           className={cn(
-            "flex-1 overflow-x-hidden",
-            sidebar && "lg:pl-64",
-            header && "pt-6"
+            'flex-1 overflow-x-hidden',
+            sidebar && 'lg:pl-64',
+            header && 'pt-6'
           )}
         >
           <Container>
-            <div className="pb-6">
-              {children}
-            </div>
+            <div className="pb-6">{children}</div>
           </Container>
         </main>
       </div>
 
       {/* Footer */}
       {footer && (
-        <footer className={cn("border-t bg-muted/50", sidebar && "lg:pl-64")}>
+        <footer className={cn('bg-muted/50 border-t', sidebar && 'lg:pl-64')}>
           <Container>
-            <div className="py-6">
-              {footer}
-            </div>
+            <div className="py-6">{footer}</div>
           </Container>
         </footer>
       )}
@@ -367,16 +363,24 @@ const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = ({
 
 // Responsive breakpoint hook
 const useBreakpoint = () => {
-  const [breakpoint, setBreakpoint] = React.useState<'sm' | 'md' | 'lg' | 'xl' | '2xl'>('lg');
+  const [breakpoint, setBreakpoint] = React.useState<
+    'sm' | 'md' | 'lg' | 'xl' | '2xl'
+  >('lg');
 
   React.useEffect(() => {
     const updateBreakpoint = () => {
       const width = window.innerWidth;
-      if (width < 640) setBreakpoint('sm');
-      else if (width < 768) setBreakpoint('md');
-      else if (width < 1024) setBreakpoint('lg');
-      else if (width < 1280) setBreakpoint('xl');
-      else setBreakpoint('2xl');
+      if (width < 640) {
+        setBreakpoint('sm');
+      } else if (width < 768) {
+        setBreakpoint('md');
+      } else if (width < 1024) {
+        setBreakpoint('lg');
+      } else if (width < 1280) {
+        setBreakpoint('xl');
+      } else {
+        setBreakpoint('2xl');
+      }
     };
 
     updateBreakpoint();

@@ -1,0 +1,72 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Production builds
+.next/
+out/
+build/
+dist/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Logs
+logs
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# Cache
+.cache/
+
+# Temporary folders
+tmp/
+temp/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Git
+.git/
+
+# IDE
+.vscode/
+.idea/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker
+.dockerignore
+Dockerfile*
+
+# Prisma generated files
+prisma/generated/
+
+# Monitoring and config files
+monitoring/
+config/
+
+# Backup files
+*.backup
+*.bak

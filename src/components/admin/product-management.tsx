@@ -1,25 +1,24 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { LoadingSpinner, Skeleton } from "@/components/ui/loading-spinner";
-import { formatCAD, truncate } from "@/lib/utils";
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Edit, 
-  Trash2, 
-  Eye, 
+import {
+  Plus,
+  Search,
+  Edit,
+  Trash2,
+  Eye,
   MoreVertical,
   Download,
   Upload,
-  Copy
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+  Copy,
+} from 'lucide-react';
+import * as React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { LoadingSpinner, Skeleton } from '@/components/ui/loading-spinner';
+import { formatCAD, truncate, cn } from '@/lib/utils';
 
 interface Product {
   id: string;
@@ -90,43 +89,48 @@ const ProductRow: React.FC<{
   };
 
   return (
-    <div className={cn(
-      "flex items-center space-x-4 p-4 border rounded-lg transition-colors hover:bg-muted/50",
-      isLoading && "opacity-50"
-    )}>
+    <div
+      className={cn(
+        'hover:bg-muted/50 flex items-center space-x-4 rounded-lg border p-4 transition-colors',
+        isLoading && 'opacity-50'
+      )}
+    >
       {/* Product Image */}
-      <div className="h-12 w-12 flex-shrink-0 rounded-md overflow-hidden bg-muted">
+      <div className="bg-muted h-12 w-12 flex-shrink-0 overflow-hidden rounded-md">
         {product.image ? (
-          <img 
-            src={product.image} 
+          <img
+            src={product.image}
             alt={product.name}
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center">
-            {product.isDigital ? 
-              <Download className="h-5 w-5 text-muted-foreground" /> :
-              <Upload className="h-5 w-5 text-muted-foreground" />
-            }
+          <div className="flex h-full w-full items-center justify-center">
+            {product.isDigital ? (
+              <Download className="text-muted-foreground h-5 w-5" />
+            ) : (
+              <Upload className="text-muted-foreground h-5 w-5" />
+            )}
           </div>
         )}
       </div>
 
       {/* Product Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center space-x-2 mb-1">
-          <h3 className="font-medium truncate">{product.name}</h3>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 flex items-center space-x-2">
+          <h3 className="truncate font-medium">{product.name}</h3>
           {getStatusBadge(product.status)}
           {product.isDigital && (
-            <Badge variant="outline" className="text-xs">Digital</Badge>
+            <Badge variant="outline" className="text-xs">
+              Digital
+            </Badge>
           )}
         </div>
-        
-        <p className="text-sm text-muted-foreground truncate mb-1">
+
+        <p className="text-muted-foreground mb-1 truncate text-sm">
           {truncate(product.description, 100)}
         </p>
-        
-        <div className="flex items-center space-x-4 text-xs text-muted-foreground">
+
+        <div className="text-muted-foreground flex items-center space-x-4 text-xs">
           <span>Category: {product.category}</span>
           <span>Sales: {product.sales.toLocaleString()}</span>
           {!product.isDigital && product.stock !== undefined && (
@@ -137,15 +141,15 @@ const ProductRow: React.FC<{
 
       {/* Pricing */}
       <div className="text-right">
-        <div className="font-semibold currency-cad">
+        <div className="currency-cad font-semibold">
           {formatCAD(product.price)}
         </div>
         {product.originalPrice && product.originalPrice > product.price && (
-          <div className="text-xs text-muted-foreground line-through">
+          <div className="text-muted-foreground text-xs line-through">
             {formatCAD(product.originalPrice)}
           </div>
         )}
-        <div className="text-xs text-muted-foreground">
+        <div className="text-muted-foreground text-xs">
           Revenue: {formatCAD(product.revenue)}
         </div>
       </div>
@@ -166,43 +170,43 @@ const ProductRow: React.FC<{
         </Button>
 
         {isMenuOpen && (
-          <div className="absolute right-0 top-full mt-1 w-40 bg-popover border rounded-md shadow-lg z-10">
+          <div className="bg-popover absolute top-full right-0 z-10 mt-1 w-40 rounded-md border shadow-lg">
             <div className="py-1">
               {onView && (
                 <button
-                  className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent"
+                  className="hover:bg-accent flex w-full items-center px-3 py-2 text-sm"
                   onClick={() => handleAction(() => onView(product.id))}
                 >
                   <Eye className="mr-2 h-4 w-4" />
                   View
                 </button>
               )}
-              
+
               {onEdit && (
                 <button
-                  className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent"
+                  className="hover:bg-accent flex w-full items-center px-3 py-2 text-sm"
                   onClick={() => handleAction(() => onEdit(product.id))}
                 >
                   <Edit className="mr-2 h-4 w-4" />
                   Edit
                 </button>
               )}
-              
+
               {onDuplicate && (
                 <button
-                  className="flex items-center w-full px-3 py-2 text-sm hover:bg-accent"
+                  className="hover:bg-accent flex w-full items-center px-3 py-2 text-sm"
                   onClick={() => handleAction(() => onDuplicate(product.id))}
                 >
                   <Copy className="mr-2 h-4 w-4" />
                   Duplicate
                 </button>
               )}
-              
-              <div className="border-t my-1" />
-              
+
+              <div className="my-1 border-t" />
+
               {onDelete && (
                 <button
-                  className="flex items-center w-full px-3 py-2 text-sm text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  className="text-destructive hover:bg-destructive hover:text-destructive-foreground flex w-full items-center px-3 py-2 text-sm"
                   onClick={() => handleAction(() => onDelete(product.id))}
                 >
                   <Trash2 className="mr-2 h-4 w-4" />
@@ -220,9 +224,9 @@ const ProductRow: React.FC<{
 const ProductManagement: React.FC<ProductManagementProps> = ({
   products,
   isLoading = false,
-  searchQuery = "",
-  selectedCategory = "",
-  selectedStatus = "",
+  searchQuery = '',
+  selectedCategory = '',
+  selectedStatus = '',
   categories = [],
   onSearchChange,
   onCategoryChange,
@@ -255,7 +259,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
 
   if (isLoading) {
     return (
-      <div className={cn("space-y-6", className)}>
+      <div className={cn('space-y-6', className)}>
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -263,17 +267,20 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
               <Skeleton className="h-10 w-32" />
             </div>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
+              <div
+                key={i}
+                className="flex items-center space-x-4 rounded-lg border p-4"
+              >
                 <Skeleton className="h-12 w-12 rounded-md" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-1/2" />
                   <Skeleton className="h-3 w-1/3" />
                 </div>
-                <div className="text-right space-y-1">
+                <div className="space-y-1 text-right">
                   <Skeleton className="h-4 w-16" />
                   <Skeleton className="h-3 w-12" />
                 </div>
@@ -287,12 +294,12 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
   }
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn('space-y-6', className)}>
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Product Management</CardTitle>
-            
+
             {onCreateProduct && (
               <Button onClick={onCreateProduct} className="gap-2">
                 <Plus className="h-4 w-4" />
@@ -301,44 +308,44 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
             )}
           </div>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {/* Search and Filters */}
-          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:space-x-4 md:space-y-0">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:space-y-0 md:space-x-4">
+            <div className="relative max-w-sm flex-1">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
                 placeholder="Search products..."
                 value={localSearchQuery}
-                onChange={(e) => setLocalSearchQuery(e.target.value)}
+                onChange={e => setLocalSearchQuery(e.target.value)}
                 className="pl-10"
               />
             </div>
-            
+
             <div className="flex space-x-2">
               {/* Category Filter */}
               {categories.length > 0 && (
                 <select
                   value={selectedCategory}
-                  onChange={(e) => onCategoryChange?.(e.target.value || null)}
-                  className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onChange={e => onCategoryChange?.(e.target.value || null)}
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
                 >
                   <option value="">All Categories</option>
-                  {categories.map((category) => (
+                  {categories.map(category => (
                     <option key={category} value={category}>
                       {category}
                     </option>
                   ))}
                 </select>
               )}
-              
+
               {/* Status Filter */}
               <select
                 value={selectedStatus}
-                onChange={(e) => onStatusChange?.(e.target.value || null)}
-                className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onChange={e => onStatusChange?.(e.target.value || null)}
+                className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:outline-none"
               >
-                {statusOptions.map((option) => (
+                {statusOptions.map(option => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -349,17 +356,17 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
 
           {/* Results Summary */}
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {products.length} product{products.length !== 1 ? 's' : ''} found
             </p>
-            
+
             {(selectedCategory || selectedStatus || localSearchQuery) && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setLocalSearchQuery("");
-                  onSearchChange?.("");
+                  setLocalSearchQuery('');
+                  onSearchChange?.('');
                   onCategoryChange?.(null);
                   onStatusChange?.(null);
                 }}
@@ -372,7 +379,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
           {/* Products List */}
           <div className="space-y-3">
             {products.length > 0 ? (
-              products.map((product) => (
+              products.map(product => (
                 <ProductRow
                   key={product.id}
                   product={product}
@@ -383,16 +390,17 @@ const ProductManagement: React.FC<ProductManagementProps> = ({
                 />
               ))
             ) : (
-              <div className="text-center py-12">
-                <div className="mx-auto h-12 w-12 text-muted-foreground mb-4">
+              <div className="py-12 text-center">
+                <div className="text-muted-foreground mx-auto mb-4 h-12 w-12">
                   <Search className="h-full w-full" />
                 </div>
-                <h3 className="text-lg font-semibold mb-2">No products found</h3>
+                <h3 className="mb-2 text-lg font-semibold">
+                  No products found
+                </h3>
                 <p className="text-muted-foreground mb-4">
-                  {localSearchQuery || selectedCategory || selectedStatus ? 
-                    "Try adjusting your search or filter criteria." :
-                    "Get started by creating your first product."
-                  }
+                  {localSearchQuery || selectedCategory || selectedStatus
+                    ? 'Try adjusting your search or filter criteria.'
+                    : 'Get started by creating your first product.'}
                 </p>
                 {onCreateProduct && (
                   <Button onClick={onCreateProduct} className="gap-2">

@@ -1,13 +1,12 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { formatCAD } from "@/lib/utils";
-import { CreditCard, Shield, Lock, MapPin, User, Mail, Phone } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { CreditCard, Shield, Lock, MapPin, User } from 'lucide-react';
+import * as React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { formatCAD, cn } from '@/lib/utils';
 
 interface CheckoutFormProps {
   subtotal: number;
@@ -112,12 +111,20 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
     }
     if (!formData.address.postalCode.trim()) {
       newErrors['address.postalCode'] = 'Postal code is required';
-    } else if (!/^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(formData.address.postalCode)) {
-      newErrors['address.postalCode'] = 'Please enter a valid Canadian postal code (e.g., K1A 0A9)';
+    } else if (
+      !/^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$/.test(formData.address.postalCode)
+    ) {
+      newErrors['address.postalCode'] =
+        'Please enter a valid Canadian postal code (e.g., K1A 0A9)';
     }
 
     // Phone validation (optional but if provided, should be valid)
-    if (formData.phone && !/^(\+1[-.\s]?)?(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})$/.test(formData.phone)) {
+    if (
+      formData.phone &&
+      !/^(\+1[-.\s]?)?(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})$/.test(
+        formData.phone
+      )
+    ) {
       newErrors.phone = 'Please enter a valid Canadian phone number';
     }
 
@@ -127,8 +134,10 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm() || !onSubmit) return;
+
+    if (!validateForm() || !onSubmit) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -143,12 +152,12 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
       const keys = path.split('.');
       const newData = { ...prev };
       let current: any = newData;
-      
+
       for (let i = 0; i < keys.length - 1; i++) {
         current = current[keys[i]];
       }
       current[keys[keys.length - 1]] = value;
-      
+
       return newData;
     });
 
@@ -163,7 +172,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
   };
 
   return (
-    <div className={cn("space-y-6", className)}>
+    <div className={cn('space-y-6', className)}>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Contact Information */}
         <Card>
@@ -173,43 +182,43 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
               Contact Information
             </CardTitle>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
             <Input
               label="Email Address"
               type="email"
               value={formData.email}
-              onChange={(e) => updateFormData('email', e.target.value)}
+              onChange={e => updateFormData('email', e.target.value)}
               error={errors.email}
               required
               placeholder="john@example.com"
             />
-            
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Input
                 label="First Name"
                 value={formData.firstName}
-                onChange={(e) => updateFormData('firstName', e.target.value)}
+                onChange={e => updateFormData('firstName', e.target.value)}
                 error={errors.firstName}
                 required
                 placeholder="John"
               />
-              
+
               <Input
                 label="Last Name"
                 value={formData.lastName}
-                onChange={(e) => updateFormData('lastName', e.target.value)}
+                onChange={e => updateFormData('lastName', e.target.value)}
                 error={errors.lastName}
                 required
                 placeholder="Doe"
               />
             </div>
-            
+
             <Input
               label="Phone Number (Optional)"
               type="tel"
               value={formData.phone}
-              onChange={(e) => updateFormData('phone', e.target.value)}
+              onChange={e => updateFormData('phone', e.target.value)}
               error={errors.phone}
               placeholder="(555) 123-4567"
               helperText="We'll only use this for order updates"
@@ -225,42 +234,44 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
               Shipping Address
             </CardTitle>
           </CardHeader>
-          
+
           <CardContent className="space-y-4">
             <Input
               label="Address Line 1"
               value={formData.address.line1}
-              onChange={(e) => updateFormData('address.line1', e.target.value)}
+              onChange={e => updateFormData('address.line1', e.target.value)}
               error={errors['address.line1']}
               required
               placeholder="123 Main Street"
             />
-            
+
             <Input
               label="Address Line 2 (Optional)"
               value={formData.address.line2}
-              onChange={(e) => updateFormData('address.line2', e.target.value)}
+              onChange={e => updateFormData('address.line2', e.target.value)}
               placeholder="Apartment, suite, etc."
             />
-            
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <Input
                 label="City"
                 value={formData.address.city}
-                onChange={(e) => updateFormData('address.city', e.target.value)}
+                onChange={e => updateFormData('address.city', e.target.value)}
                 error={errors['address.city']}
                 required
                 placeholder="Toronto"
               />
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">
                   Province <span className="text-destructive">*</span>
                 </label>
                 <select
                   value={formData.address.province}
-                  onChange={(e) => updateFormData('address.province', e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  onChange={e =>
+                    updateFormData('address.province', e.target.value)
+                  }
+                  className="border-input bg-background ring-offset-background focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
                   required
                 >
                   {CANADIAN_PROVINCES.map(province => (
@@ -270,11 +281,16 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
                   ))}
                 </select>
               </div>
-              
+
               <Input
                 label="Postal Code"
                 value={formData.address.postalCode}
-                onChange={(e) => updateFormData('address.postalCode', e.target.value.toUpperCase())}
+                onChange={e =>
+                  updateFormData(
+                    'address.postalCode',
+                    e.target.value.toUpperCase()
+                  )
+                }
                 error={errors['address.postalCode']}
                 required
                 placeholder="K1A 0A9"
@@ -292,32 +308,33 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
               Order Summary
             </CardTitle>
           </CardHeader>
-          
+
           <CardContent className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Subtotal</span>
               <span className="currency-cad">{formatCAD(subtotal)}</span>
             </div>
-            
+
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
                 Tax ({formData.address.province})
               </span>
               <span className="currency-cad">{formatCAD(tax)}</span>
             </div>
-            
+
             <div className="border-t pt-3">
-              <div className="flex justify-between font-semibold text-lg">
+              <div className="flex justify-between text-lg font-semibold">
                 <span>Total</span>
                 <span className="currency-cad">{formatCAD(total)}</span>
               </div>
             </div>
-            
+
             {/* Security Notice */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
+            <div className="text-muted-foreground bg-muted/50 flex items-center gap-2 rounded-lg p-3 text-xs">
               <Shield className="h-4 w-4" />
               <span>
-                Your payment information is encrypted and secure. We use Stripe for payment processing.
+                Your payment information is encrypted and secure. We use Stripe
+                for payment processing.
               </span>
             </div>
           </CardContent>
@@ -337,7 +354,7 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({
       </form>
 
       {/* Trust Indicators */}
-      <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+      <div className="text-muted-foreground flex items-center justify-center gap-4 text-xs">
         <div className="flex items-center gap-1">
           <Shield className="h-3 w-3" />
           <span>SSL Encrypted</span>

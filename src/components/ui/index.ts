@@ -1,6 +1,13 @@
 // Base UI Components
 export { Button, buttonVariants } from './button';
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './card';
+export {
+  Card,
+  CardHeader,
+  CardFooter,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from './card';
 export { Input } from './input';
 export { Badge, badgeVariants } from './badge';
 export { LoadingSpinner, Skeleton, PageLoader } from './loading-spinner';
@@ -15,7 +22,7 @@ export { CheckoutForm, CANADIAN_PROVINCES } from '../customer/checkout-form';
 export { DashboardOverview, MetricCard } from '../admin/dashboard-overview';
 export { ProductManagement } from '../admin/product-management';
 
-// Authentication Components  
+// Authentication Components
 export { LoginForm } from '../auth/login-form';
 export { RoleGuard, PermissionGuard, withRoleGuard } from '../auth/role-guard';
 
@@ -27,33 +34,33 @@ export { SubscriptionManagement } from '../payment/subscription-management';
 export { CustomerLookup } from '../support/customer-lookup';
 
 // Layout & Responsive Components
-export { 
-  ResponsiveLayout, 
-  PageHeader, 
-  GridLayout, 
-  Stack, 
+export {
+  ResponsiveLayout,
+  PageHeader,
+  GridLayout,
+  Stack,
   Container,
   useBreakpoint,
-  useMediaQuery 
+  useMediaQuery,
 } from './responsive-layout';
 
 // Error Handling Components
-export { 
-  ErrorBoundary, 
-  DefaultErrorFallback, 
-  NotFound, 
-  ApiError, 
+export {
+  ErrorBoundary,
+  DefaultErrorFallback,
+  NotFound,
+  ApiError,
   NetworkError,
-  useErrorHandler 
+  useErrorHandler,
 } from './error-boundary';
 
 // Canadian-specific Components
-export { 
-  CanadianTaxDisplay, 
-  ProvinceSelect, 
+export {
+  CanadianTaxDisplay,
+  ProvinceSelect,
   CurrencyInput,
   calculateDetailedTax,
-  getTaxInfo 
+  getTaxInfo,
 } from './canadian-tax-display';
 
 // Types
@@ -64,23 +71,26 @@ export type { ProductCardProps } from '../customer/product-card';
 export type { Product } from '../customer/product-catalog';
 export type { CartItem } from '../customer/shopping-cart';
 export type { CheckoutFormData } from '../customer/checkout-form';
-export type { DashboardData, MetricCardProps } from '../admin/dashboard-overview';
+export type {
+  DashboardData,
+  MetricCardProps,
+} from '../admin/dashboard-overview';
 export type { LoginCredentials } from '../auth/login-form';
 export type { User, UserRole } from '../auth/role-guard';
 export type { PaymentData, PaymentMethod } from '../payment/payment-form';
 export type { Subscription } from '../payment/subscription-management';
 export type { Customer } from '../support/customer-lookup';
 export type { TaxBreakdown } from './canadian-tax-display';
-export type { 
+export type {
   ResponsiveLayoutProps,
   PageHeaderProps,
   GridLayoutProps,
   StackProps,
-  ContainerProps 
+  ContainerProps,
 } from './responsive-layout';
-export type { 
+export type {
   ErrorBoundaryProps,
   ErrorFallbackProps,
   NotFoundProps,
-  ApiErrorProps 
+  ApiErrorProps,
 } from './error-boundary';

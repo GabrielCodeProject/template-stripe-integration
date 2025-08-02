@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Shield, AlertTriangle, Lock, Home } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Shield, AlertTriangle, Lock, Home } from 'lucide-react';
+import * as React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 type UserRole = 'admin' | 'customer' | 'support';
 
@@ -40,30 +40,29 @@ const AccessDenied: React.FC<{
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[400px] p-4">
+    <div className="flex min-h-[400px] items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 text-muted-foreground">
+          <div className="text-muted-foreground mx-auto mb-4 h-12 w-12">
             <Lock className="h-full w-full" />
           </div>
           <CardTitle className="text-xl">Access Restricted</CardTitle>
         </CardHeader>
-        
-        <CardContent className="text-center space-y-4">
-          <div className="text-sm text-muted-foreground">
+
+        <CardContent className="space-y-4 text-center">
+          <div className="text-muted-foreground text-sm">
             {userRole ? (
               <>
                 <p className="mb-2">
-                  Your current role: <span className="font-medium">{roleLabels[userRole]}</span>
+                  Your current role:{' '}
+                  <span className="font-medium">{roleLabels[userRole]}</span>
                 </p>
-                <p>
-                  This page requires one of the following roles:
-                </p>
+                <p>This page requires one of the following roles:</p>
                 <div className="mt-2 flex flex-wrap justify-center gap-1">
-                  {allowedRoles.map((role) => (
+                  {allowedRoles.map(role => (
                     <span
                       key={role}
-                      className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-muted"
+                      className="bg-muted inline-flex items-center rounded-full px-2 py-1 text-xs"
                     >
                       {roleLabels[role]}
                     </span>
@@ -82,10 +81,10 @@ const AccessDenied: React.FC<{
                 Sign In
               </Button>
             )}
-            
+
             {onGoHome && (
-              <Button 
-                variant={userRole ? "default" : "outline"} 
+              <Button
+                variant={userRole ? 'default' : 'outline'}
                 onClick={onGoHome}
                 className="w-full"
               >
@@ -101,10 +100,10 @@ const AccessDenied: React.FC<{
 };
 
 const LoadingState: React.FC = () => (
-  <div className="flex items-center justify-center min-h-[400px]">
-    <div className="text-center space-y-4">
-      <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-muted border-t-primary" />
-      <p className="text-sm text-muted-foreground">Checking permissions...</p>
+  <div className="flex min-h-[400px] items-center justify-center">
+    <div className="space-y-4 text-center">
+      <div className="border-muted border-t-primary mx-auto h-8 w-8 animate-spin rounded-full border-4" />
+      <p className="text-muted-foreground text-sm">Checking permissions...</p>
     </div>
   </div>
 );
@@ -126,24 +125,28 @@ const RoleGuard: React.FC<RoleGuardProps> = ({
 
   // User not authenticated
   if (!user) {
-    return fallback || (
-      <AccessDenied
-        allowedRoles={allowedRoles}
-        onLogin={onLogin}
-        onGoHome={onGoHome}
-      />
+    return (
+      fallback || (
+        <AccessDenied
+          allowedRoles={allowedRoles}
+          onLogin={onLogin}
+          onGoHome={onGoHome}
+        />
+      )
     );
   }
 
   // User doesn't have required role
   if (!allowedRoles.includes(user.role)) {
-    return fallback || (
-      <AccessDenied
-        userRole={user.role}
-        allowedRoles={allowedRoles}
-        onLogin={onLogin}
-        onGoHome={onGoHome}
-      />
+    return (
+      fallback || (
+        <AccessDenied
+          userRole={user.role}
+          allowedRoles={allowedRoles}
+          onLogin={onLogin}
+          onGoHome={onGoHome}
+        />
+      )
     );
   }
 
@@ -180,60 +183,70 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
   }
 
   if (!user) {
-    return fallback || (
-      <AccessDenied
-        allowedRoles={['admin', 'customer', 'support']}
-        onLogin={onLogin}
-        onGoHome={onGoHome}
-      />
+    return (
+      fallback || (
+        <AccessDenied
+          allowedRoles={['admin', 'customer', 'support']}
+          onLogin={onLogin}
+          onGoHome={onGoHome}
+        />
+      )
     );
   }
 
   const userPermissions = user.permissions || [];
-  
+
   const hasPermission = requireAll
-    ? requiredPermissions.every(permission => userPermissions.includes(permission))
-    : requiredPermissions.some(permission => userPermissions.includes(permission));
+    ? requiredPermissions.every(permission =>
+        userPermissions.includes(permission)
+      )
+    : requiredPermissions.some(permission =>
+        userPermissions.includes(permission)
+      );
 
   if (!hasPermission) {
-    return fallback || (
-      <div className="flex items-center justify-center min-h-[400px] p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 h-12 w-12 text-muted-foreground">
-              <AlertTriangle className="h-full w-full" />
-            </div>
-            <CardTitle className="text-xl">Insufficient Permissions</CardTitle>
-          </CardHeader>
-          
-          <CardContent className="text-center space-y-4">
-            <p className="text-sm text-muted-foreground">
-              You don't have the necessary permissions to access this feature.
-            </p>
-            
-            <div className="text-xs text-muted-foreground">
-              <p className="mb-2">Required permissions:</p>
-              <div className="flex flex-wrap justify-center gap-1">
-                {requiredPermissions.map((permission) => (
-                  <span
-                    key={permission}
-                    className="inline-flex items-center px-2 py-1 rounded-full bg-muted"
-                  >
-                    {permission}
-                  </span>
-                ))}
+    return (
+      fallback || (
+        <div className="flex min-h-[400px] items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="text-muted-foreground mx-auto mb-4 h-12 w-12">
+                <AlertTriangle className="h-full w-full" />
               </div>
-            </div>
+              <CardTitle className="text-xl">
+                Insufficient Permissions
+              </CardTitle>
+            </CardHeader>
 
-            {onGoHome && (
-              <Button onClick={onGoHome} className="w-full">
-                <Home className="mr-2 h-4 w-4" />
-                Go Back
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            <CardContent className="space-y-4 text-center">
+              <p className="text-muted-foreground text-sm">
+                You don't have the necessary permissions to access this feature.
+              </p>
+
+              <div className="text-muted-foreground text-xs">
+                <p className="mb-2">Required permissions:</p>
+                <div className="flex flex-wrap justify-center gap-1">
+                  {requiredPermissions.map(permission => (
+                    <span
+                      key={permission}
+                      className="bg-muted inline-flex items-center rounded-full px-2 py-1"
+                    >
+                      {permission}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {onGoHome && (
+                <Button onClick={onGoHome} className="w-full">
+                  <Home className="mr-2 h-4 w-4" />
+                  Go Back
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )
     );
   }
 
@@ -245,15 +258,13 @@ const withRoleGuard = <P extends object>(
   Component: React.ComponentType<P>,
   allowedRoles: UserRole[]
 ) => {
-  const WrappedComponent = (props: P & { user?: User | null; isLoading?: boolean }) => {
+  const WrappedComponent = (
+    props: P & { user?: User | null; isLoading?: boolean }
+  ) => {
     const { user, isLoading, ...componentProps } = props;
-    
+
     return (
-      <RoleGuard
-        allowedRoles={allowedRoles}
-        user={user}
-        isLoading={isLoading}
-      >
+      <RoleGuard allowedRoles={allowedRoles} user={user} isLoading={isLoading}>
         <Component {...(componentProps as P)} />
       </RoleGuard>
     );
@@ -263,10 +274,4 @@ const withRoleGuard = <P extends object>(
   return WrappedComponent;
 };
 
-export { 
-  RoleGuard, 
-  PermissionGuard, 
-  withRoleGuard, 
-  type User, 
-  type UserRole 
-};
+export { RoleGuard, PermissionGuard, withRoleGuard, type User, type UserRole };

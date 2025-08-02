@@ -1,13 +1,18 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { isValidEmail } from "@/lib/utils";
-import { Eye, EyeOff, Lock, Mail, Shield, AlertTriangle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Eye, EyeOff, Lock, Mail, Shield, AlertTriangle } from 'lucide-react';
+import * as React from 'react';
+
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { isValidEmail, cn } from '@/lib/utils';
 
 interface LoginFormProps {
   onSubmit?: (credentials: LoginCredentials) => Promise<void>;
@@ -29,18 +34,20 @@ const LoginForm: React.FC<LoginFormProps> = ({
   onSubmit,
   onForgotPassword,
   onSignUp,
-  defaultEmail = "",
+  defaultEmail = '',
   isLoading = false,
   error,
   className,
 }) => {
   const [formData, setFormData] = React.useState<LoginCredentials>({
     email: defaultEmail,
-    password: "",
+    password: '',
     rememberMe: false,
   });
 
-  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = React.useState<Record<string, string>>(
+    {}
+  );
   const [showPassword, setShowPassword] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -48,15 +55,15 @@ const LoginForm: React.FC<LoginFormProps> = ({
     const errors: Record<string, string> = {};
 
     if (!formData.email.trim()) {
-      errors.email = "Email is required";
+      errors.email = 'Email is required';
     } else if (!isValidEmail(formData.email)) {
-      errors.email = "Please enter a valid email address";
+      errors.email = 'Please enter a valid email address';
     }
 
     if (!formData.password) {
-      errors.password = "Password is required";
+      errors.password = 'Password is required';
     } else if (formData.password.length < 6) {
-      errors.password = "Password must be at least 6 characters";
+      errors.password = 'Password must be at least 6 characters';
     }
 
     setFieldErrors(errors);
@@ -65,8 +72,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm() || !onSubmit) return;
+
+    if (!validateForm() || !onSubmit) {
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -76,9 +85,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
     }
   };
 
-  const updateFormData = (field: keyof LoginCredentials, value: string | boolean) => {
+  const updateFormData = (
+    field: keyof LoginCredentials,
+    value: string | boolean
+  ) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear field error when user starts typing
     if (fieldErrors[field]) {
       setFieldErrors(prev => {
@@ -90,19 +102,17 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <Card className={cn("w-full max-w-md mx-auto", className)}>
+    <Card className={cn('mx-auto w-full max-w-md', className)}>
       <CardHeader className="text-center">
         <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-        <CardDescription>
-          Sign in to your account to continue
-        </CardDescription>
+        <CardDescription>Sign in to your account to continue</CardDescription>
       </CardHeader>
 
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Global Error */}
           {error && (
-            <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-lg border border-destructive/20">
+            <div className="text-destructive bg-destructive/10 border-destructive/20 flex items-center gap-2 rounded-lg border p-3 text-sm">
               <AlertTriangle className="h-4 w-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
@@ -110,16 +120,16 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
           {/* Email Field */}
           <div className="space-y-2">
-            <label className="text-sm font-medium leading-none">
+            <label className="text-sm leading-none font-medium">
               Email Address <span className="text-destructive">*</span>
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
                 type="email"
                 placeholder="Enter your email"
                 value={formData.email}
-                onChange={(e) => updateFormData('email', e.target.value)}
+                onChange={e => updateFormData('email', e.target.value)}
                 error={fieldErrors.email}
                 className="pl-10"
                 disabled={isLoading || isSubmitting}
@@ -131,24 +141,24 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
           {/* Password Field */}
           <div className="space-y-2">
-            <label className="text-sm font-medium leading-none">
+            <label className="text-sm leading-none font-medium">
               Password <span className="text-destructive">*</span>
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
-                type={showPassword ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Enter your password"
                 value={formData.password}
-                onChange={(e) => updateFormData('password', e.target.value)}
+                onChange={e => updateFormData('password', e.target.value)}
                 error={fieldErrors.password}
-                className="pl-10 pr-10"
+                className="pr-10 pl-10"
                 disabled={isLoading || isSubmitting}
                 autoComplete="current-password"
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                 onClick={() => setShowPassword(!showPassword)}
                 disabled={isLoading || isSubmitting}
               >
@@ -168,11 +178,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
                 type="checkbox"
                 id="remember-me"
                 checked={formData.rememberMe}
-                onChange={(e) => updateFormData('rememberMe', e.target.checked)}
-                className="rounded border-input"
+                onChange={e => updateFormData('rememberMe', e.target.checked)}
+                className="border-input rounded"
                 disabled={isLoading || isSubmitting}
               />
-              <label htmlFor="remember-me" className="text-sm text-muted-foreground">
+              <label
+                htmlFor="remember-me"
+                className="text-muted-foreground text-sm"
+              >
                 Remember me
               </label>
             </div>
@@ -181,7 +194,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
               <button
                 type="button"
                 onClick={() => onForgotPassword(formData.email)}
-                className="text-sm text-primary hover:underline"
+                className="text-primary text-sm hover:underline"
                 disabled={isLoading || isSubmitting}
               >
                 Forgot password?
@@ -204,12 +217,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
           {/* Sign Up Link */}
           {onSignUp && (
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                Don't have an account?{" "}
+              <p className="text-muted-foreground text-sm">
+                Don't have an account?{' '}
                 <button
                   type="button"
                   onClick={onSignUp}
-                  className="text-primary hover:underline font-medium"
+                  className="text-primary font-medium hover:underline"
                   disabled={isLoading || isSubmitting}
                 >
                   Sign up
@@ -220,7 +233,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         </form>
 
         {/* Security Notice */}
-        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <div className="text-muted-foreground mt-6 flex items-center justify-center gap-2 text-xs">
           <Shield className="h-3 w-3" />
           <span>Your connection is secure and encrypted</span>
         </div>

@@ -5,9 +5,11 @@
  */
 
 import crypto from 'crypto';
+
 import { NextRequest, NextResponse } from 'next/server';
-import { rateLimit } from '@/lib/rate-limit';
+
 import { db } from '@/lib/db';
+import { rateLimit } from '@/lib/rate-limit';
 
 export interface SecurityConfig {
   rateLimiting: {
@@ -42,28 +44,29 @@ export interface SecurityConfig {
 export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
   rateLimiting: {
     payment: { requests: 10, window: 60000 }, // 10 requests per minute
-    api: { requests: 100, window: 60000 },    // 100 requests per minute
+    api: { requests: 100, window: 60000 }, // 100 requests per minute
     webhook: { requests: 1000, window: 60000 }, // 1000 webhooks per minute
-    auth: { requests: 5, window: 300000 }     // 5 auth attempts per 5 minutes
+    auth: { requests: 5, window: 300000 }, // 5 auth attempts per 5 minutes
   },
   encryption: {
     algorithm: 'aes-256-gcm',
     keyLength: 32,
-    ivLength: 16
+    ivLength: 16,
   },
   session: {
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    sameSite: 'strict'
+    sameSite: 'strict',
   },
   headers: {
-    contentSecurityPolicy: "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com https://*.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com;",
+    contentSecurityPolicy:
+      "default-src 'self'; script-src 'self' 'unsafe-inline' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.stripe.com https://*.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com;",
     strictTransportSecurity: 'max-age=31536000; includeSubDomains; preload',
     xFrameOptions: 'DENY',
     xContentTypeOptions: 'nosniff',
-    referrerPolicy: 'strict-origin-when-cross-origin'
-  }
+    referrerPolicy: 'strict-origin-when-cross-origin',
+  },
 };
 
 /**
@@ -71,16 +74,16 @@ export const DEFAULT_SECURITY_CONFIG: SecurityConfig = {
  */
 export const SENSITIVE_DATA_PATTERNS = [
   /\b4[0-9]{12}(?:[0-9]{3})?\b/, // Visa card numbers
-  /\b5[1-5][0-9]{14}\b/,         // MasterCard numbers
-  /\b3[47][0-9]{13}\b/,          // American Express numbers
-  /\b[0-9]{3,4}\b/,              // CVV numbers (when in payment context)
-  /\bpk_test_[a-zA-Z0-9]+\b/,    // Stripe publishable test keys
-  /\bsk_test_[a-zA-Z0-9]+\b/,    // Stripe secret test keys
-  /\bpk_live_[a-zA-Z0-9]+\b/,    // Stripe publishable live keys
-  /\bsk_live_[a-zA-Z0-9]+\b/,    // Stripe secret live keys
-  /\bwhsec_[a-zA-Z0-9]+\b/,      // Stripe webhook secrets
-  /password/i,                    // Password fields
-  /ssn|social.security/i          // Social Security Numbers
+  /\b5[1-5][0-9]{14}\b/, // MasterCard numbers
+  /\b3[47][0-9]{13}\b/, // American Express numbers
+  /\b[0-9]{3,4}\b/, // CVV numbers (when in payment context)
+  /\bpk_test_[a-zA-Z0-9]+\b/, // Stripe publishable test keys
+  /\bsk_test_[a-zA-Z0-9]+\b/, // Stripe secret test keys
+  /\bpk_live_[a-zA-Z0-9]+\b/, // Stripe publishable live keys
+  /\bsk_live_[a-zA-Z0-9]+\b/, // Stripe secret live keys
+  /\bwhsec_[a-zA-Z0-9]+\b/, // Stripe webhook secrets
+  /password/i, // Password fields
+  /ssn|social.security/i, // Social Security Numbers
 ];
 
 /**
@@ -102,13 +105,22 @@ export class PCICompliance {
   applySecurityHeaders(response: NextResponse): NextResponse {
     const headers = this.config.headers;
 
-    response.headers.set('Content-Security-Policy', headers.contentSecurityPolicy);
-    response.headers.set('Strict-Transport-Security', headers.strictTransportSecurity);
+    response.headers.set(
+      'Content-Security-Policy',
+      headers.contentSecurityPolicy
+    );
+    response.headers.set(
+      'Strict-Transport-Security',
+      headers.strictTransportSecurity
+    );
     response.headers.set('X-Frame-Options', headers.xFrameOptions);
     response.headers.set('X-Content-Type-Options', headers.xContentTypeOptions);
     response.headers.set('Referrer-Policy', headers.referrerPolicy);
     response.headers.set('X-XSS-Protection', '1; mode=block');
-    response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    response.headers.set(
+      'Permissions-Policy',
+      'geolocation=(), microphone=(), camera=()'
+    );
 
     return response;
   }
@@ -144,33 +156,47 @@ export class PCICompliance {
   /**
    * Encrypt sensitive data for storage
    */
-  encryptSensitiveData(data: string): { encrypted: string; iv: string; tag: string } {
+  encryptSensitiveData(data: string): {
+    encrypted: string;
+    iv: string;
+    tag: string;
+  } {
     const iv = crypto.randomBytes(this.config.encryption.ivLength);
-    const cipher = crypto.createCipher(this.config.encryption.algorithm, this.encryptionKey);
-    
+    const cipher = crypto.createCipher(
+      this.config.encryption.algorithm,
+      this.encryptionKey
+    );
+
     let encrypted = cipher.update(data, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    
+
     return {
       encrypted,
       iv: iv.toString('hex'),
-      tag: (cipher as any).getAuthTag?.()?.toString('hex') || ''
+      tag: (cipher as any).getAuthTag?.()?.toString('hex') || '',
     };
   }
 
   /**
    * Decrypt sensitive data
    */
-  decryptSensitiveData(encryptedData: { encrypted: string; iv: string; tag: string }): string {
-    const decipher = crypto.createDecipher(this.config.encryption.algorithm, this.encryptionKey);
-    
+  decryptSensitiveData(encryptedData: {
+    encrypted: string;
+    iv: string;
+    tag: string;
+  }): string {
+    const decipher = crypto.createDecipher(
+      this.config.encryption.algorithm,
+      this.encryptionKey
+    );
+
     if (encryptedData.tag) {
       (decipher as any).setAuthTag?.(Buffer.from(encryptedData.tag, 'hex'));
     }
-    
+
     let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
-    
+
     return decrypted;
   }
 
@@ -181,7 +207,7 @@ export class PCICompliance {
     let masked = data;
 
     SENSITIVE_DATA_PATTERNS.forEach(pattern => {
-      masked = masked.replace(pattern, (match) => {
+      masked = masked.replace(pattern, match => {
         if (match.length <= 4) {
           return '*'.repeat(match.length);
         }
@@ -198,7 +224,7 @@ export class PCICompliance {
   validateOrigin(request: NextRequest): boolean {
     const origin = request.headers.get('origin');
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
     ];
 
     if (!origin) {
@@ -215,7 +241,11 @@ export class PCICompliance {
   async applyRateLimit(
     request: NextRequest,
     type: 'payment' | 'api' | 'webhook' | 'auth'
-  ): Promise<{ allowed: boolean; remainingRequests: number; resetTime: number }> {
+  ): Promise<{
+    allowed: boolean;
+    remainingRequests: number;
+    resetTime: number;
+  }> {
     const config = this.config.rateLimiting[type];
     const identifier = this.getRequestIdentifier(request);
 
@@ -226,7 +256,11 @@ export class PCICompliance {
    * Log security events for monitoring
    */
   async logSecurityEvent(event: {
-    type: 'FAILED_AUTH' | 'RATE_LIMIT_EXCEEDED' | 'SUSPICIOUS_ACTIVITY' | 'PCI_VIOLATION';
+    type:
+      | 'FAILED_AUTH'
+      | 'RATE_LIMIT_EXCEEDED'
+      | 'SUSPICIOUS_ACTIVITY'
+      | 'PCI_VIOLATION';
     severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
     description: string;
     ipAddress?: string;
@@ -240,9 +274,13 @@ export class PCICompliance {
       severity: event.severity,
       description: event.description,
       ipAddress: event.ipAddress,
-      userAgent: event.userAgent ? this.maskSensitiveData(event.userAgent) : undefined,
+      userAgent: event.userAgent
+        ? this.maskSensitiveData(event.userAgent)
+        : undefined,
       userId: event.userId,
-      metadata: event.metadata ? this.maskSensitiveData(JSON.stringify(event.metadata)) : undefined
+      metadata: event.metadata
+        ? this.maskSensitiveData(JSON.stringify(event.metadata))
+        : undefined,
     };
 
     // Log to console (in production, use proper security monitoring service)
@@ -259,8 +297,8 @@ export class PCICompliance {
           description: `Security Event: ${event.type} - ${event.description}`,
           newValues: securityLog,
           ipAddress: event.ipAddress,
-          userAgent: event.userAgent
-        }
+          userAgent: event.userAgent,
+        },
       });
     } catch (error) {
       console.error('Failed to log security event to database:', error);
@@ -292,7 +330,8 @@ export class PCICompliance {
       const currentTime = Math.floor(Date.now() / 1000);
       const timeDiff = Math.abs(currentTime - timestampNum);
 
-      if (timeDiff > 300) { // 5 minutes tolerance
+      if (timeDiff > 300) {
+        // 5 minutes tolerance
         return false;
       }
 
@@ -355,7 +394,7 @@ export class PCICompliance {
       /(\'\s*(union|select|insert|update|delete|drop|create|alter)\s*)/i,
       /(\-\-|\#|\/\*|\*\/)/,
       /(\'\s*or\s*\'\s*\=\s*\')/i,
-      /(\'\s*or\s*1\s*=\s*1)/i
+      /(\'\s*or\s*1\s*=\s*1)/i,
     ];
 
     sqlInjectionPatterns.forEach((pattern, index) => {
@@ -372,7 +411,7 @@ export class PCICompliance {
       /on\w+\s*=/i,
       /<iframe/i,
       /<object/i,
-      /<embed/i
+      /<embed/i,
     ];
 
     xssPatterns.forEach((pattern, index) => {
@@ -386,7 +425,7 @@ export class PCICompliance {
     const commandInjectionPatterns = [
       /(\|\||&&|;|\|)/,
       /(rm\s|del\s|format\s)/i,
-      /(\$\(|\`)/
+      /(\$\(|\`)/,
     ];
 
     commandInjectionPatterns.forEach((pattern, index) => {
@@ -414,38 +453,47 @@ export class PCICompliance {
       {
         requirement: 'PCI DSS 3.2.1: Card Data Storage',
         status: 'COMPLIANT' as const,
-        description: 'No cardholder data is stored. All payment processing handled by Stripe.'
+        description:
+          'No cardholder data is stored. All payment processing handled by Stripe.',
       },
       {
         requirement: 'PCI DSS 4.1: Encryption in Transit',
-        status: process.env.NODE_ENV === 'production' ? 'COMPLIANT' as const : 'NEEDS_REVIEW' as const,
-        description: 'HTTPS enforced for all communications. TLS 1.2+ required.'
+        status:
+          process.env.NODE_ENV === 'production'
+            ? ('COMPLIANT' as const)
+            : ('NEEDS_REVIEW' as const),
+        description:
+          'HTTPS enforced for all communications. TLS 1.2+ required.',
       },
       {
         requirement: 'PCI DSS 6.5.1: Injection Flaws',
         status: 'COMPLIANT' as const,
-        description: 'Input validation and parameterized queries implemented.'
+        description: 'Input validation and parameterized queries implemented.',
       },
       {
         requirement: 'PCI DSS 6.5.4: Insecure Communications',
         status: 'COMPLIANT' as const,
-        description: 'All API communications use HTTPS with certificate validation.'
+        description:
+          'All API communications use HTTPS with certificate validation.',
       },
       {
         requirement: 'PCI DSS 8.2: Authentication',
         status: 'COMPLIANT' as const,
-        description: 'Strong authentication implemented with session management.'
+        description:
+          'Strong authentication implemented with session management.',
       },
       {
         requirement: 'PCI DSS 10.1: Audit Trails',
         status: 'COMPLIANT' as const,
-        description: 'Comprehensive audit logging implemented for all payment activities.'
+        description:
+          'Comprehensive audit logging implemented for all payment activities.',
       },
       {
         requirement: 'PCI DSS 11.2: Vulnerability Scanning',
         status: 'NEEDS_REVIEW' as const,
-        description: 'Regular vulnerability scanning should be implemented in production.'
-      }
+        description:
+          'Regular vulnerability scanning should be implemented in production.',
+      },
     ];
 
     const compliant = requirements.every(req => req.status === 'COMPLIANT');
@@ -458,10 +506,11 @@ export class PCICompliance {
    */
   private getRequestIdentifier(request: NextRequest): string {
     // Use IP address as primary identifier
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'unknown';
-    
+    const ip =
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
+
     // For authenticated requests, also consider user ID
     const authHeader = request.headers.get('authorization');
     if (authHeader) {
@@ -486,7 +535,8 @@ export class PCICompliance {
       throw new Error('ENCRYPTION_KEY environment variable is required');
     }
 
-    if (key.length !== 64) { // 32 bytes in hex
+    if (key.length !== 64) {
+      // 32 bytes in hex
       throw new Error('ENCRYPTION_KEY must be 32 bytes (64 hex characters)');
     }
 
@@ -520,20 +570,17 @@ export async function securityMiddleware(request: NextRequest): Promise<{
       severity: 'MEDIUM',
       description: 'Invalid origin in request',
       ipAddress: request.headers.get('x-forwarded-for') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
+      userAgent: request.headers.get('user-agent') || undefined,
     });
 
     return {
       allowed: false,
-      response: NextResponse.json(
-        { error: 'Invalid origin' },
-        { status: 403 }
-      ),
+      response: NextResponse.json({ error: 'Invalid origin' }, { status: 403 }),
       securityContext: {
         rateLimited: false,
         suspicious: true,
-        validOrigin: false
-      }
+        validOrigin: false,
+      },
     };
   }
 
@@ -545,11 +592,14 @@ export async function securityMiddleware(request: NextRequest): Promise<{
       severity: 'MEDIUM',
       description: 'Rate limit exceeded',
       ipAddress: request.headers.get('x-forwarded-for') || undefined,
-      userAgent: request.headers.get('user-agent') || undefined
+      userAgent: request.headers.get('user-agent') || undefined,
     });
 
     response.headers.set('X-RateLimit-Limit', '100');
-    response.headers.set('X-RateLimit-Remaining', rateLimit.remainingRequests.toString());
+    response.headers.set(
+      'X-RateLimit-Remaining',
+      rateLimit.remainingRequests.toString()
+    );
     response.headers.set('X-RateLimit-Reset', rateLimit.resetTime.toString());
 
     return {
@@ -561,8 +611,8 @@ export async function securityMiddleware(request: NextRequest): Promise<{
       securityContext: {
         rateLimited: true,
         suspicious: false,
-        validOrigin: true
-      }
+        validOrigin: true,
+      },
     };
   }
 
@@ -572,8 +622,8 @@ export async function securityMiddleware(request: NextRequest): Promise<{
     securityContext: {
       rateLimited: false,
       suspicious: false,
-      validOrigin: true
-    }
+      validOrigin: true,
+    },
   };
 }
 

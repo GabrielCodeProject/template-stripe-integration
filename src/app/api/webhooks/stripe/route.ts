@@ -6,9 +6,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { stripe } from '@/lib/stripe/client';
+
 import { processWebhookEvent } from '@/lib/stripe/webhook-handlers';
+
 import { db } from '@/lib/db';
+import { stripe } from '@/lib/stripe/client';
 
 /**
  * POST handler for Stripe webhooks
@@ -16,7 +18,7 @@ import { db } from '@/lib/db';
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   const sig = req.headers.get('stripe-signature');
-  
+
   if (!sig) {
     console.error('Missing Stripe signature header');
     return NextResponse.json(
@@ -37,16 +39,13 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     );
   } catch (err: any) {
     console.error('Webhook signature verification failed:', err.message);
-    return NextResponse.json(
-      { error: 'Invalid signature' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
   // Check for duplicate events (idempotency)
   try {
     const existingEvent = await db.webhookEvent.findUnique({
-      where: { stripeEventId: event.id }
+      where: { stripeEventId: event.id },
     });
 
     if (existingEvent && existingEvent.processed) {
@@ -60,10 +59,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     // Mark event as processed
     await db.webhookEvent.upsert({
       where: { stripeEventId: event.id },
-      update: { 
+      update: {
         processed: true,
         processedAt: new Date(),
-        attempts: { increment: 1 }
+        attempts: { increment: 1 },
       },
       create: {
         stripeEventId: event.id,
@@ -71,23 +70,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         processed: true,
         processedAt: new Date(),
         attempts: 1,
-        eventData: event.data.object as any
-      }
+        eventData: event.data.object as any,
+      },
     });
 
     console.log(`Successfully processed webhook: ${event.type} (${event.id})`);
     return NextResponse.json({ received: true });
-
   } catch (error: any) {
     console.error('Webhook processing failed:', error);
 
     // Log failed processing attempt
     await db.webhookEvent.upsert({
       where: { stripeEventId: event.id },
-      update: { 
+      update: {
         error: error.message,
         attempts: { increment: 1 },
-        lastAttemptAt: new Date()
+        lastAttemptAt: new Date(),
       },
       create: {
         stripeEventId: event.id,
@@ -96,8 +94,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         error: error.message,
         attempts: 1,
         lastAttemptAt: new Date(),
-        eventData: event.data.object as any
-      }
+        eventData: event.data.object as any,
+      },
     });
 
     // Return 500 to trigger Stripe retry
@@ -116,6 +114,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   return NextResponse.json({
     message: 'Stripe webhook endpoint is active',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
+    environment: process.env.NODE_ENV,
   });
 }

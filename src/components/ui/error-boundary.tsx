@@ -1,10 +1,11 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, RefreshCw, Home, Bug, Mail } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { AlertTriangle, RefreshCw, Home, Mail } from 'lucide-react';
+import * as React from 'react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -51,40 +52,41 @@ interface ApiErrorProps {
 const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
   error,
   resetError,
-  level = 'component'
+  level = 'component',
 }) => {
   const isPageLevel = level === 'page';
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   return (
-    <div className={cn(
-      "flex items-center justify-center",
-      isPageLevel ? "min-h-[400px] p-4" : "p-6"
-    )}>
-      <Card className={cn("w-full", isPageLevel ? "max-w-lg" : "max-w-md")}>
+    <div
+      className={cn(
+        'flex items-center justify-center',
+        isPageLevel ? 'min-h-[400px] p-4' : 'p-6'
+      )}
+    >
+      <Card className={cn('w-full', isPageLevel ? 'max-w-lg' : 'max-w-md')}>
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 text-destructive">
+          <div className="text-destructive mx-auto mb-4 h-12 w-12">
             <AlertTriangle className="h-full w-full" />
           </div>
-          <CardTitle className={isPageLevel ? "text-xl" : "text-lg"}>
-            {isPageLevel ? "Something went wrong" : "Error occurred"}
+          <CardTitle className={isPageLevel ? 'text-xl' : 'text-lg'}>
+            {isPageLevel ? 'Something went wrong' : 'Error occurred'}
           </CardTitle>
         </CardHeader>
-        
-        <CardContent className="text-center space-y-4">
+
+        <CardContent className="space-y-4 text-center">
           <p className="text-muted-foreground">
-            {isPageLevel 
+            {isPageLevel
               ? "We're sorry, but something unexpected happened. Please try refreshing the page or contact support if the problem persists."
-              : "An error occurred while loading this content."
-            }
+              : 'An error occurred while loading this content.'}
           </p>
 
           {isDevelopment && error && (
-            <details className="text-left text-xs bg-muted p-3 rounded-lg">
-              <summary className="cursor-pointer font-medium text-destructive mb-2">
+            <details className="bg-muted rounded-lg p-3 text-left text-xs">
+              <summary className="text-destructive mb-2 cursor-pointer font-medium">
                 Error Details (Development)
               </summary>
-              <pre className="whitespace-pre-wrap overflow-auto">
+              <pre className="overflow-auto whitespace-pre-wrap">
                 {error.message}
                 {error.stack && `\n\n${error.stack}`}
               </pre>
@@ -96,9 +98,13 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
               <RefreshCw className="h-4 w-4" />
               Try Again
             </Button>
-            
+
             {isPageLevel && (
-              <Button variant="outline" onClick={() => window.location.href = '/'} className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => (window.location.href = '/')}
+                className="gap-2"
+              >
                 <Home className="h-4 w-4" />
                 Go Home
               </Button>
@@ -111,7 +117,10 @@ const DefaultErrorFallback: React.FC<ErrorFallbackProps> = ({
 };
 
 // Error Boundary Class Component
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -126,7 +135,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
@@ -144,7 +153,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   render() {
     if (this.state.hasError) {
       const FallbackComponent = this.props.fallback || DefaultErrorFallback;
-      
+
       return (
         <div className={this.props.className}>
           <FallbackComponent
@@ -183,7 +192,7 @@ const useErrorHandler = () => {
 
 // 404 Not Found component
 const NotFound: React.FC<NotFoundProps> = ({
-  title = "Page Not Found",
+  title = 'Page Not Found',
   description = "Sorry, we couldn't find the page you're looking for. It might have been moved, deleted, or you entered the wrong URL.",
   showHomeButton = true,
   showBackButton = true,
@@ -208,16 +217,21 @@ const NotFound: React.FC<NotFoundProps> = ({
   };
 
   return (
-    <div className={cn("flex items-center justify-center min-h-[400px] p-4", className)}>
+    <div
+      className={cn(
+        'flex min-h-[400px] items-center justify-center p-4',
+        className
+      )}
+    >
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 text-6xl font-bold text-muted-foreground">
+          <div className="text-muted-foreground mx-auto mb-4 text-6xl font-bold">
             404
           </div>
           <CardTitle className="text-2xl">{title}</CardTitle>
         </CardHeader>
-        
-        <CardContent className="text-center space-y-4">
+
+        <CardContent className="space-y-4 text-center">
           <p className="text-muted-foreground">{description}</p>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
@@ -226,7 +240,7 @@ const NotFound: React.FC<NotFoundProps> = ({
                 Go Back
               </Button>
             )}
-            
+
             {showHomeButton && (
               <Button onClick={handleHome} className="gap-2">
                 <Home className="h-4 w-4" />
@@ -249,42 +263,52 @@ const ApiError: React.FC<ApiErrorProps> = ({
 }) => {
   const getErrorMessage = () => {
     if (error.status === 404) {
-      return "The requested resource was not found.";
+      return 'The requested resource was not found.';
     } else if (error.status === 403) {
       return "You don't have permission to access this resource.";
     } else if (error.status === 401) {
-      return "Please sign in to access this resource.";
+      return 'Please sign in to access this resource.';
     } else if (error.status && error.status >= 500) {
-      return "Server error occurred. Please try again later.";
+      return 'Server error occurred. Please try again later.';
     } else if (error.message) {
       return error.message;
     } else {
-      return "An unexpected error occurred.";
+      return 'An unexpected error occurred.';
     }
   };
 
   const getErrorTitle = () => {
-    if (error.status === 404) return "Not Found";
-    if (error.status === 403) return "Access Denied";
-    if (error.status === 401) return "Authentication Required";
-    if (error.status && error.status >= 500) return "Server Error";
-    return "Error";
+    if (error.status === 404) {
+      return 'Not Found';
+    }
+    if (error.status === 403) {
+      return 'Access Denied';
+    }
+    if (error.status === 401) {
+      return 'Authentication Required';
+    }
+    if (error.status && error.status >= 500) {
+      return 'Server Error';
+    }
+    return 'Error';
   };
 
   return (
-    <div className={cn("flex items-center justify-center p-6", className)}>
+    <div className={cn('flex items-center justify-center p-6', className)}>
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-12 w-12 text-destructive">
+          <div className="text-destructive mx-auto mb-4 h-12 w-12">
             <AlertTriangle className="h-full w-full" />
           </div>
           <CardTitle className="text-lg">{getErrorTitle()}</CardTitle>
           {error.status && (
-            <p className="text-sm text-muted-foreground">Error {error.status}</p>
+            <p className="text-muted-foreground text-sm">
+              Error {error.status}
+            </p>
           )}
         </CardHeader>
-        
-        <CardContent className="text-center space-y-4">
+
+        <CardContent className="space-y-4 text-center">
           <p className="text-muted-foreground">{getErrorMessage()}</p>
 
           <div className="flex flex-col gap-2">
@@ -294,7 +318,7 @@ const ApiError: React.FC<ApiErrorProps> = ({
                 Try Again
               </Button>
             )}
-            
+
             {showSupport && (
               <Button variant="outline" className="gap-2">
                 <Mail className="h-4 w-4" />
@@ -317,7 +341,8 @@ const NetworkError: React.FC<{
     <ApiError
       error={{
         status: 0,
-        message: "Network connection failed. Please check your internet connection and try again.",
+        message:
+          'Network connection failed. Please check your internet connection and try again.',
       }}
       onRetry={onRetry}
       className={className}

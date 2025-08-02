@@ -1,41 +1,447 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ==============================================================================
+# STRIPE PAYMENT TEMPLATE - COMPREHENSIVE .GITIGNORE
+# Next.js 15+ App Router with TypeScript, Stripe Integration & Canadian Compliance
+# ==============================================================================
 
-# dependencies
-/node_modules
+# ==============================================================================
+# SENSITIVE FILES & SECURITY - NEVER COMMIT THESE
+# ==============================================================================
+
+# Environment Variables & Configuration
+.env*
+!.env.example
+!.env.template
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.staging
+
+# Secret Keys & Certificates
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+*.jks
+secrets/
+.secrets/
+private/
+certs/
+certificates/
+
+# Authentication & Session Data
+.auth/
+sessions/
+tokens/
+.jwt/
+oauth/
+.oauth/
+
+# Stripe & Payment Processing
+stripe-cli/
+stripe_*.log
+payment-logs/
+transaction-data/
+webhook-logs/
+.stripe/
+
+# Database Credentials & Backups
+database.sqlite
+database.sqlite3
+*.db
+*.sqlite
+*.sqlite3
+db-backups/
+database-exports/
+*.sql.gz
+*.dump
+
+# ==============================================================================
+# DEPENDENCIES & PACKAGE MANAGERS
+# ==============================================================================
+
+# Node.js Dependencies
+node_modules/
 /.pnp
 .pnp.*
+
+# Yarn
 .yarn/*
 !.yarn/patches
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+.yarnrc.yml
 
-# testing
-/coverage
+# npm
+npm-debug.log*
+.npm/
+.npmrc
 
-# next.js
+# pnpm
+.pnpm-debug.log*
+.pnpm-store/
+pnpm-lock.yaml
+
+# Bun
+.bun/
+bun.lockb
+
+# ==============================================================================
+# BUILD ARTIFACTS & CACHES
+# ==============================================================================
+
+# Next.js Build Output
 /.next/
 /out/
+.next/
+out/
 
-# production
+# Build Directories
 /build
+/dist
+/.build
+/.dist
 
-# misc
+# TypeScript Build Cache
+*.tsbuildinfo
+next-env.d.ts
+
+# ESLint Cache
+.eslintcache
+
+# Prettier Cache
+.prettiercache
+
+# SWC Cache
+.swc/
+
+# Turbo Cache
+.turbo/
+
+# ==============================================================================
+# DEVELOPMENT TOOLS & IDE
+# ==============================================================================
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ==============================================================================
+# OPERATING SYSTEM FILES
+# ==============================================================================
+
+# macOS
 .DS_Store
-*.pem
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# debug
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ==============================================================================
+# LOGGING & DEBUGGING
+# ==============================================================================
+
+# Application Logs
+*.log
+logs/
+log/
+.logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
+# Debug Files
+debug/
+.debug/
+*.pid
+*.seed
+*.pid.lock
 
-# vercel
+# Coverage & Testing
+/coverage
+/.nyc_output
+.coverage/
+coverage/
+.jest/
+test-results/
+.test-results/
+
+# ==============================================================================
+# DATABASE & ORM
+# ==============================================================================
+
+# Prisma
+prisma/generated/
+.prisma/
+prisma/*.db
+prisma/*.sqlite
+prisma/migrations/dev.db
+
+# MongoDB
+mongo-data/
+mongodb-data/
+
+# Redis
+redis-data/
+dump.rdb
+
+# PostgreSQL
+postgres-data/
+*.backup
+
+# MySQL
+mysql-data/
+*.sql
+
+# ==============================================================================
+# DEPLOYMENT & INFRASTRUCTURE
+# ==============================================================================
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+.docker/
+volumes/
+docker-data/
+
+# Kubernetes
+k8s-secrets/
+.kube/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+terraform.tfvars.json
+
+# Ansible
+*.retry
+.vault_pass
+
+# Cloud Providers
 .vercel
+.netlify
+.aws/
+.gcp/
+.azure/
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# ==============================================================================
+# STRIPE & PAYMENT PROCESSING SPECIFIC
+# ==============================================================================
+
+# Stripe CLI
+.stripe/
+stripe-cli/
+stripe_*.log
+webhook-events/
+stripe-fixtures/
+
+# Payment Processing Logs
+payment-logs/
+transaction-logs/
+refund-logs/
+chargeback-logs/
+
+# Canadian Tax Calculation Cache
+tax-cache/
+gst-hst-cache/
+provincial-tax-cache/
+
+# Analytics & Reporting
+analytics-data/
+reports/
+metrics-cache/
+
+# Testing Data (Stripe Test Mode)
+test-customers/
+test-transactions/
+test-webhooks/
+
+# ==============================================================================
+# MONITORING & OBSERVABILITY
+# ==============================================================================
+
+# Monitoring Data
+monitoring-data/
+prometheus-data/
+grafana-data/
+.monitoring/
+
+# APM & Tracing
+apm-data/
+traces/
+.traces/
+
+# Health Check Logs
+health-checks/
+uptime-logs/
+
+# ==============================================================================
+# BACKUP & TEMPORARY FILES
+# ==============================================================================
+
+# Backup Files
+*.bak
+*.backup
+*.old
+*.orig
+*.tmp
+backup/
+backups/
+.backup/
+
+# Temporary Files
+tmp/
+temp/
+.tmp/
+.temp/
+*.temp
+*.tmp
+
+# Cache Directories
+.cache/
+cache/
+.next-cache/
+
+# ==============================================================================
+# CI/CD & AUTOMATION
+# ==============================================================================
+
+# GitHub Actions Artifacts
+.github/artifacts/
+
+# Jenkins
+.jenkins/
+
+# CircleCI
+.circleci/local/
+
+# Deployment Artifacts
+deploy/
+deployment/
+.deploy/
+
+# ==============================================================================
+# DEVELOPMENT & TESTING EXCLUSIONS
+# ==============================================================================
+
+# Storybook
+storybook-static/
+.storybook/build/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Jest
+.jest-cache/
+
+# Cypress
+cypress/downloads/
+cypress/screenshots/
+cypress/videos/
+
+# ==============================================================================
+# MISCELLANEOUS
+# ==============================================================================
+
+# Archive Files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Generated Documentation
+docs-generated/
+api-docs/
+
+# Localization
+*.mo
+*.pot
+
+# Python (if using Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+
+# ==============================================================================
+# PROJECT SPECIFIC EXCLUSIONS
+# ==============================================================================
+
+# Custom Application Data
+user-uploads/
+customer-data/
+audit-logs/
+compliance-reports/
+
+# Local Development Overrides
+local.config.js
+local.config.ts
+dev.config.js
+dev.config.ts
+
+# Performance Profiling
+.next/profiling/
+performance-logs/
+
+# Security Scanning Results
+security-reports/
+vulnerability-scans/

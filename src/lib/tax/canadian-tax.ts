@@ -4,13 +4,13 @@
  * Compliant with current Canadian tax regulations as of 2024
  */
 
-import { CanadianProvince, TaxType } from '@prisma/client';
+import { CanadianProvince } from '@prisma/client';
 
 export interface TaxBreakdown {
-  gst?: { rate: number; amount: number; };
-  hst?: { rate: number; amount: number; };
-  pst?: { rate: number; amount: number; };
-  qst?: { rate: number; amount: number; };
+  gst?: { rate: number; amount: number };
+  hst?: { rate: number; amount: number };
+  pst?: { rate: number; amount: number };
+  qst?: { rate: number; amount: number };
 }
 
 export interface TaxCalculation {
@@ -23,10 +23,10 @@ export interface TaxCalculation {
 
 export interface CanadianTaxRates {
   province: CanadianProvince;
-  gst?: number;      // Federal GST
-  pst?: number;      // Provincial PST
-  hst?: number;      // Harmonized HST
-  qst?: number;      // Quebec QST
+  gst?: number; // Federal GST
+  pst?: number; // Provincial PST
+  hst?: number; // Harmonized HST
+  qst?: number; // Quebec QST
   effectiveDate: Date;
   description: string;
 }
@@ -40,84 +40,84 @@ export const CANADIAN_TAX_RATES: Record<CanadianProvince, CanadianTaxRates> = {
     province: 'AB',
     gst: 0.05,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Alberta - GST only (5%)'
+    description: 'Alberta - GST only (5%)',
   },
   BC: {
     province: 'BC',
     gst: 0.05,
     pst: 0.07,
     effectiveDate: new Date('2024-01-01'),
-    description: 'British Columbia - GST (5%) + PST (7%)'
+    description: 'British Columbia - GST (5%) + PST (7%)',
   },
   MB: {
     province: 'MB',
     gst: 0.05,
     pst: 0.07,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Manitoba - GST (5%) + PST (7%)'
+    description: 'Manitoba - GST (5%) + PST (7%)',
   },
   NB: {
     province: 'NB',
     hst: 0.15,
     effectiveDate: new Date('2024-01-01'),
-    description: 'New Brunswick - HST (15%)'
+    description: 'New Brunswick - HST (15%)',
   },
   NL: {
     province: 'NL',
     hst: 0.15,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Newfoundland and Labrador - HST (15%)'
+    description: 'Newfoundland and Labrador - HST (15%)',
   },
   NS: {
     province: 'NS',
     hst: 0.15,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Nova Scotia - HST (15%)'
+    description: 'Nova Scotia - HST (15%)',
   },
   ON: {
     province: 'ON',
     hst: 0.13,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Ontario - HST (13%)'
+    description: 'Ontario - HST (13%)',
   },
   PE: {
     province: 'PE',
     hst: 0.15,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Prince Edward Island - HST (15%)'
+    description: 'Prince Edward Island - HST (15%)',
   },
   QC: {
     province: 'QC',
     gst: 0.05,
     qst: 0.09975,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Quebec - GST (5%) + QST (9.975%)'
+    description: 'Quebec - GST (5%) + QST (9.975%)',
   },
   SK: {
     province: 'SK',
     gst: 0.05,
     pst: 0.06,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Saskatchewan - GST (5%) + PST (6%)'
+    description: 'Saskatchewan - GST (5%) + PST (6%)',
   },
   NT: {
     province: 'NT',
     gst: 0.05,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Northwest Territories - GST only (5%)'
+    description: 'Northwest Territories - GST only (5%)',
   },
   NU: {
     province: 'NU',
     gst: 0.05,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Nunavut - GST only (5%)'
+    description: 'Nunavut - GST only (5%)',
   },
   YT: {
     province: 'YT',
     gst: 0.05,
     effectiveDate: new Date('2024-01-01'),
-    description: 'Yukon - GST only (5%)'
-  }
+    description: 'Yukon - GST only (5%)',
+  },
 };
 
 /**
@@ -137,7 +137,7 @@ export const DIGITAL_PRODUCT_EXEMPTIONS: Record<CanadianProvince, string[]> = {
   SK: [],
   NT: [],
   NU: [],
-  YT: []
+  YT: [],
 };
 
 /**
@@ -146,7 +146,7 @@ export const DIGITAL_PRODUCT_EXEMPTIONS: Record<CanadianProvince, string[]> = {
 export function calculateCanadianTax(
   subtotal: number,
   province: CanadianProvince,
-  productType: 'DIGITAL' | 'PHYSICAL' | 'SUBSCRIPTION' = 'DIGITAL'
+  _productType: 'DIGITAL' | 'PHYSICAL' | 'SUBSCRIPTION' = 'DIGITAL'
 ): TaxCalculation {
   if (subtotal <= 0) {
     return {
@@ -154,7 +154,7 @@ export function calculateCanadianTax(
       totalTax: 0,
       total: subtotal,
       breakdown: {},
-      province
+      province,
     };
   }
 
@@ -174,7 +174,7 @@ export function calculateCanadianTax(
     totalTax += hstAmount;
   } else {
     // Non-HST provinces - calculate GST and provincial taxes separately
-    
+
     // Federal GST (applies to all provinces)
     if (rates.gst) {
       const gstAmount = Math.round(subtotal * rates.gst);
@@ -204,7 +204,7 @@ export function calculateCanadianTax(
     totalTax,
     total: subtotal + totalTax,
     breakdown,
-    province
+    province,
   };
 }
 
@@ -219,7 +219,7 @@ export function calculateLineItemTaxes(
   province: CanadianProvince
 ): TaxCalculation {
   const totalSubtotal = items.reduce((sum, item) => sum + item.subtotal, 0);
-  
+
   // For simplicity, calculate on total amount
   // In complex scenarios, you might need per-item calculations
   return calculateCanadianTax(totalSubtotal, province);
@@ -238,11 +238,12 @@ export function validateTaxCalculation(calculation: TaxCalculation): boolean {
 
   // Validate breakdown totals
   const breakdownTotal = Object.values(breakdown).reduce(
-    (sum, tax) => sum + (tax?.amount || 0), 
+    (sum, tax) => sum + (tax?.amount || 0),
     0
   );
 
-  if (Math.abs(breakdownTotal - totalTax) > 1) { // Allow 1 cent rounding difference
+  if (Math.abs(breakdownTotal - totalTax) > 1) {
+    // Allow 1 cent rounding difference
     return false;
   }
 
@@ -264,16 +265,24 @@ export function generateTaxSummary(calculation: TaxCalculation): string[] {
   const { breakdown } = calculation;
 
   if (breakdown.hst) {
-    summary.push(`HST (${(breakdown.hst.rate * 100).toFixed(1)}%): ${formatTaxAmount(breakdown.hst.amount)}`);
+    summary.push(
+      `HST (${(breakdown.hst.rate * 100).toFixed(1)}%): ${formatTaxAmount(breakdown.hst.amount)}`
+    );
   } else {
     if (breakdown.gst) {
-      summary.push(`GST (${(breakdown.gst.rate * 100).toFixed(1)}%): ${formatTaxAmount(breakdown.gst.amount)}`);
+      summary.push(
+        `GST (${(breakdown.gst.rate * 100).toFixed(1)}%): ${formatTaxAmount(breakdown.gst.amount)}`
+      );
     }
     if (breakdown.pst) {
-      summary.push(`PST (${(breakdown.pst.rate * 100).toFixed(1)}%): ${formatTaxAmount(breakdown.pst.amount)}`);
+      summary.push(
+        `PST (${(breakdown.pst.rate * 100).toFixed(1)}%): ${formatTaxAmount(breakdown.pst.amount)}`
+      );
     }
     if (breakdown.qst) {
-      summary.push(`QST (${(breakdown.qst.rate * 100).toFixed(3)}%): ${formatTaxAmount(breakdown.qst.amount)}`);
+      summary.push(
+        `QST (${(breakdown.qst.rate * 100).toFixed(3)}%): ${formatTaxAmount(breakdown.qst.amount)}`
+      );
     }
   }
 
@@ -284,7 +293,9 @@ export function generateTaxSummary(calculation: TaxCalculation): string[] {
 /**
  * Get tax rate information for a province
  */
-export function getProvinceTaxInfo(province: CanadianProvince): CanadianTaxRates {
+export function getProvinceTaxInfo(
+  province: CanadianProvince
+): CanadianTaxRates {
   const rates = CANADIAN_TAX_RATES[province];
   if (!rates) {
     throw new Error(`Tax information not found for province: ${province}`);
@@ -297,19 +308,19 @@ export function getProvinceTaxInfo(province: CanadianProvince): CanadianTaxRates
  */
 export function getEffectiveTaxRate(province: CanadianProvince): number {
   const rates = CANADIAN_TAX_RATES[province];
-  
+
   if (rates.hst) {
     return rates.hst;
   }
-  
+
   let effectiveRate = rates.gst || 0;
   effectiveRate += rates.pst || 0;
-  
+
   // For Quebec, QST is calculated on GST-inclusive amount
   if (rates.qst) {
     effectiveRate += rates.qst * (1 + (rates.gst || 0));
   }
-  
+
   return effectiveRate;
 }
 
@@ -329,12 +340,14 @@ export function isProductTaxExempt(
 /**
  * Generate tax breakdown for Stripe metadata
  */
-export function generateStripeMetadata(calculation: TaxCalculation): Record<string, string> {
+export function generateStripeMetadata(
+  calculation: TaxCalculation
+): Record<string, string> {
   const metadata: Record<string, string> = {
     tax_province: calculation.province,
     tax_subtotal: calculation.subtotal.toString(),
     tax_total: calculation.totalTax.toString(),
-    tax_calculation_date: new Date().toISOString()
+    tax_calculation_date: new Date().toISOString(),
   };
 
   if (calculation.breakdown.hst) {
@@ -371,7 +384,7 @@ export function prepareTaxBreakdownForDb(calculation: TaxCalculation): any {
     total: calculation.total,
     breakdown: calculation.breakdown,
     calculatedAt: new Date(),
-    effectiveRates: CANADIAN_TAX_RATES[calculation.province]
+    effectiveRates: CANADIAN_TAX_RATES[calculation.province],
   };
 }
 
@@ -379,38 +392,42 @@ export function prepareTaxBreakdownForDb(calculation: TaxCalculation): any {
  * Utility function to get province from postal code
  * Basic implementation - in production, you might use a more comprehensive service
  */
-export function getProvinceFromPostalCode(postalCode: string): CanadianProvince | null {
+export function getProvinceFromPostalCode(
+  postalCode: string
+): CanadianProvince | null {
   const cleanPostalCode = postalCode.replace(/\s+/g, '').toUpperCase();
-  
-  if (cleanPostalCode.length < 1) return null;
+
+  if (cleanPostalCode.length < 1) {
+    return null;
+  }
 
   const firstChar = cleanPostalCode.charAt(0);
-  
+
   const postalCodeMap: Record<string, CanadianProvince> = {
-    'A': 'NL', // Newfoundland and Labrador
-    'B': 'NS', // Nova Scotia
-    'C': 'PE', // Prince Edward Island
-    'E': 'NB', // New Brunswick
-    'G': 'QC', // Quebec (Eastern)
-    'H': 'QC', // Quebec (Metropolitan)
-    'J': 'QC', // Quebec (Western)
-    'K': 'ON', // Ontario (Eastern)
-    'L': 'ON', // Ontario (Central)
-    'M': 'ON', // Ontario (Toronto)
-    'N': 'ON', // Ontario (Southwestern)
-    'P': 'ON', // Ontario (Northern)
-    'R': 'MB', // Manitoba
-    'S': 'SK', // Saskatchewan
-    'T': 'AB', // Alberta
-    'V': 'BC', // British Columbia
-    'X': 'NT', // Northwest Territories and Nunavut
-    'Y': 'YT'  // Yukon
+    A: 'NL', // Newfoundland and Labrador
+    B: 'NS', // Nova Scotia
+    C: 'PE', // Prince Edward Island
+    E: 'NB', // New Brunswick
+    G: 'QC', // Quebec (Eastern)
+    H: 'QC', // Quebec (Metropolitan)
+    J: 'QC', // Quebec (Western)
+    K: 'ON', // Ontario (Eastern)
+    L: 'ON', // Ontario (Central)
+    M: 'ON', // Ontario (Toronto)
+    N: 'ON', // Ontario (Southwestern)
+    P: 'ON', // Ontario (Northern)
+    R: 'MB', // Manitoba
+    S: 'SK', // Saskatchewan
+    T: 'AB', // Alberta
+    V: 'BC', // British Columbia
+    X: 'NT', // Northwest Territories and Nunavut
+    Y: 'YT', // Yukon
   };
 
   return postalCodeMap[firstChar] || null;
 }
 
-export default {
+const CanadianTaxUtils = {
   calculateCanadianTax,
   calculateLineItemTaxes,
   validateTaxCalculation,
@@ -422,5 +439,7 @@ export default {
   generateStripeMetadata,
   prepareTaxBreakdownForDb,
   getProvinceFromPostalCode,
-  CANADIAN_TAX_RATES
+  CANADIAN_TAX_RATES,
 };
+
+export default CanadianTaxUtils;

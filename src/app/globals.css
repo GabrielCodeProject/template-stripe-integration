@@ -1,4 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+
+/* Import Tailwind CSS plugins */
+@import '@tailwindcss/forms';
+@import '@tailwindcss/typography';
 
 /* Shadcn UI Base Styles */
 @layer base {
@@ -129,7 +133,9 @@
 
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
 
   /* Smooth scrolling */
@@ -139,7 +145,7 @@
 
   /* Focus styles for accessibility */
   *:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    @apply ring-ring ring-offset-background ring-2 ring-offset-2 outline-none;
   }
 
   /* Remove focus outline for mouse users */
@@ -171,33 +177,33 @@
   .text-h1 {
     @apply text-4xl font-bold tracking-tight lg:text-5xl;
   }
-  
+
   .text-h2 {
     @apply text-3xl font-semibold tracking-tight lg:text-4xl;
   }
-  
+
   .text-h3 {
     @apply text-2xl font-semibold tracking-tight lg:text-3xl;
   }
-  
+
   .text-h4 {
     @apply text-xl font-semibold tracking-tight lg:text-2xl;
   }
-  
+
   .text-body-large {
     @apply text-lg leading-relaxed;
   }
-  
+
   .text-body {
     @apply text-base leading-relaxed;
   }
-  
+
   .text-body-small {
     @apply text-sm leading-relaxed;
   }
-  
+
   .text-caption {
-    @apply text-xs text-muted-foreground;
+    @apply text-muted-foreground text-xs;
   }
 
   /* Canadian currency styling */
@@ -209,11 +215,11 @@
   .text-success {
     @apply text-success;
   }
-  
+
   .text-error {
     @apply text-destructive;
   }
-  
+
   .text-warning {
     @apply text-warning;
   }
@@ -227,26 +233,26 @@
   .grid-responsive {
     @apply grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
   }
-  
+
   .grid-dashboard {
     @apply grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
   }
 
   /* Card shadows */
   .card-shadow {
-    @apply shadow-sm hover:shadow-md transition-shadow duration-200;
+    @apply shadow-sm transition-shadow duration-200 hover:shadow-md;
   }
-  
+
   .card-shadow-lg {
-    @apply shadow-lg hover:shadow-xl transition-shadow duration-200;
+    @apply shadow-lg transition-shadow duration-200 hover:shadow-xl;
   }
 
   /* Interactive states */
   .interactive {
     @apply transition-all duration-200 hover:scale-[1.02] active:scale-[0.98];
   }
-  
+
   .interactive-subtle {
-    @apply transition-all duration-200 hover:bg-accent/50;
+    @apply hover:bg-accent/50 transition-all duration-200;
   }
 }
