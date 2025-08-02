@@ -274,7 +274,7 @@ async function seedSampleProducts() {
       metaTitle: 'Premium Whey Protein Isolate - Build Muscle Fast',
       metaDescription: 'Get the best whey protein isolate in Canada. Fast absorption, great taste, and results you can see.',
       featured: true,
-      tags: ['protein', 'whey', 'muscle-building', 'recovery'],
+      tags: JSON.stringify(['protein', 'whey', 'muscle-building', 'recovery']),
       images: {
         create: [
           {
@@ -340,7 +340,7 @@ async function seedSampleProducts() {
       metaTitle: '12-Week Strength Building Program - Get Strong Fast',
       metaDescription: 'Transform your body with our proven 12-week strength training program. Includes everything you need to build muscle and strength.',
       featured: true,
-      tags: ['strength', 'training', 'muscle-building', 'digital', 'program'],
+      tags: JSON.stringify(['strength', 'training', 'muscle-building', 'digital', 'program']),
       images: {
         create: [
           {
@@ -363,7 +363,8 @@ async function seedSampleProducts() {
       price: 2999, // $29.99/month
       billingInterval: 'month',
       trialDays: 7,
-      features: ['Monthly new programs', 'Video tutorials', 'Nutrition guides', 'Community access'],
+      stripePriceId: 'price_test_monthly_workout_plan', // Placeholder for development
+      features: JSON.stringify(['Monthly new programs', 'Video tutorials', 'Nutrition guides', 'Community access']),
       isActive: true,
       sortOrder: 1
     }

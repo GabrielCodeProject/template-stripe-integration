@@ -131,8 +131,20 @@ check_prerequisites() {
     
     local missing_tools=()
     
-    # Check required tools
-    local tools=("docker" "pg_dump" "tar" "gzip")
+    # Check required tools based on database type
+    local tools=("tar" "gzip")
+    
+    # Add database-specific tools
+    if [[ "$DATABASE_URL" == file:* ]] || [[ "$DATABASE_URL" == sqlite:* ]]; then
+        # SQLite only needs basic file operations (cp, which is built-in)
+        :
+    else
+        # PostgreSQL needs pg_dump and possibly docker
+        tools+=("pg_dump")
+        if [ "$ENVIRONMENT" != "development" ]; then
+            tools+=("docker")
+        fi
+    fi
     
     if [ "$ENCRYPTION_ENABLED" = "true" ]; then
         tools+=("gpg")
@@ -174,47 +186,69 @@ backup_database() {
     
     local timestamp=$(date +%Y%m%d_%H%M%S)
     local backup_name="db_backup_${timestamp}"
-    local backup_file="${BACKUP_DIR}/${backup_name}.sql"
     
-    # Create database backup
-    if docker ps | grep -q postgres; then
-        # Use Docker exec for containerized database
-        docker exec postgres pg_dump -U "${POSTGRES_USER}" "${POSTGRES_DB}" > "$backup_file"
+    # Detect database type from DATABASE_URL
+    if [[ "$DATABASE_URL" == file:* ]] || [[ "$DATABASE_URL" == sqlite:* ]]; then
+        # SQLite backup
+        local db_file=${DATABASE_URL#file:}
+        if [ ! -f "$db_file" ]; then
+            log_message "ERROR" "SQLite database file not found: $db_file"
+            exit 1
+        fi
+        
+        local backup_file="${BACKUP_DIR}/${backup_name}.db"
+        cp "$db_file" "$backup_file"
+        
+        if [ $? -eq 0 ]; then
+            log_message "SUCCESS" "SQLite database backup created: $backup_file"
+        else
+            log_message "ERROR" "SQLite database backup failed"
+            exit 1
+        fi
     else
-        # Direct connection for external database
-        PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump -h "${POSTGRES_HOST:-localhost}" -p "${POSTGRES_PORT:-5432}" -U "${POSTGRES_USER}" "${POSTGRES_DB}" > "$backup_file"
+        # PostgreSQL backup
+        local backup_file="${BACKUP_DIR}/${backup_name}.sql"
+        
+        # Create database backup
+        if docker ps | grep -q postgres; then
+            # Use Docker exec for containerized database
+            docker exec postgres pg_dump -U "${POSTGRES_USER}" "${POSTGRES_DB}" > "$backup_file"
+        else
+            # Direct connection for external database
+            PGPASSWORD="${POSTGRES_PASSWORD}" pg_dump -h "${POSTGRES_HOST:-localhost}" -p "${POSTGRES_PORT:-5432}" -U "${POSTGRES_USER}" "${POSTGRES_DB}" > "$backup_file"
+        fi
+        
+        if [ $? -ne 0 ]; then
+            log_message "ERROR" "PostgreSQL database backup failed"
+            exit 1
+        fi
+        
+        log_message "SUCCESS" "PostgreSQL database backup created: $backup_file"
     fi
     
-    if [ $? -eq 0 ]; then
-        log_message "SUCCESS" "Database backup created: $backup_file"
-        
-        # Get backup size
-        local backup_size=$(du -h "$backup_file" | cut -f1)
-        log_message "INFO" "Backup size: $backup_size"
-        
-        # Compress if enabled
-        if [ "$COMPRESSION_ENABLED" = "true" ]; then
-            gzip "$backup_file"
-            backup_file="${backup_file}.gz"
-            local compressed_size=$(du -h "$backup_file" | cut -f1)
-            log_message "INFO" "Compressed size: $compressed_size"
-        fi
-        
-        # Encrypt if enabled
-        if [ "$ENCRYPTION_ENABLED" = "true" ]; then
-            encrypt_file "$backup_file"
-        fi
-        
-        # Upload to S3 if enabled
-        if [ "$S3_ENABLED" = "true" ]; then
-            upload_to_s3 "$backup_file" "database/"
-        fi
-        
-        echo "$backup_file"
-    else
-        log_message "ERROR" "Database backup failed"
-        exit 1
+    # Get backup size
+    local backup_size=$(du -h "$backup_file" | cut -f1)
+    log_message "INFO" "Backup size: $backup_size"
+    
+    # Compress if enabled
+    if [ "$COMPRESSION_ENABLED" = "true" ]; then
+        gzip "$backup_file"
+        backup_file="${backup_file}.gz"
+        local compressed_size=$(du -h "$backup_file" | cut -f1)
+        log_message "INFO" "Compressed size: $compressed_size"
     fi
+    
+    # Encrypt if enabled
+    if [ "$ENCRYPTION_ENABLED" = "true" ]; then
+        encrypt_file "$backup_file"
+    fi
+    
+    # Upload to S3 if enabled
+    if [ "$S3_ENABLED" = "true" ]; then
+        upload_to_s3 "$backup_file" "database/"
+    fi
+    
+    echo "$backup_file"
 }
 
 # Function to backup uploaded files
@@ -536,7 +570,14 @@ full_backup() {
 database_backup() {
     log_message "INFO" "Starting database-only backup..."
     
-    local db_backup=$(backup_database)
+    # Capture both stdout (filename) and handle stderr for logs
+    local db_backup
+    db_backup=$(backup_database 2>&1 | tail -1)
+    
+    # Extract just the filename from the last line
+    db_backup=$(echo "$db_backup" | grep -o '/[^[:space:]]*$' || echo "$db_backup")
+    
+    log_message "INFO" "Backup file path: $db_backup"
     
     if verify_backup "$db_backup"; then
         log_message "SUCCESS" "Database backup completed successfully"

@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -95,10 +95,10 @@ enum PromoCodeType {
 }
 
 enum TaxType {
-  GST    // Goods and Services Tax
-  HST    // Harmonized Sales Tax
-  PST    // Provincial Sales Tax
-  QST    // Quebec Sales Tax
+  GST // Goods and Services Tax
+  HST // Harmonized Sales Tax
+  PST // Provincial Sales Tax
+  QST // Quebec Sales Tax
 }
 
 enum AuditAction {
@@ -140,51 +140,51 @@ enum CanadianProvince {
 // ============================================================================
 
 model User {
-  id                String     @id @default(cuid())
-  email             String     @unique
-  emailVerified     Boolean    @default(false)
-  emailVerifiedAt   DateTime?
-  hashedPassword    String?
-  firstName         String?
-  lastName          String?
-  phone             String?
-  dateOfBirth       DateTime?
-  profileImageUrl   String?
-  
+  id              String    @id @default(cuid())
+  email           String    @unique
+  emailVerified   Boolean   @default(false)
+  emailVerifiedAt DateTime?
+  hashedPassword  String?
+  firstName       String?
+  lastName        String?
+  phone           String?
+  dateOfBirth     DateTime?
+  profileImageUrl String?
+
   // Stripe Integration
-  stripeCustomerId  String?    @unique
-  
+  stripeCustomerId String? @unique
+
   // Account Status
-  status            UserStatus @default(PENDING_VERIFICATION)
-  role              UserRole   @default(CUSTOMER)
-  
+  status UserStatus @default(PENDING_VERIFICATION)
+  role   UserRole   @default(CUSTOMER)
+
   // Canadian Address Information
-  address           Address?
-  
+  address Address?
+
   // Timestamps
-  createdAt         DateTime   @default(now())
-  updatedAt         DateTime   @updatedAt
-  lastLoginAt       DateTime?
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
   // Relations
-  sessions          Session[]
-  orders            Order[]
-  subscriptions     Subscription[]
-  downloads         Download[]
-  supportTickets    SupportTicket[]
-  supportMessages   SupportMessage[]
-  auditLogs         AuditLog[]
-  notifications     Notification[]
-  payments          Payment[]
-  invoices          Invoice[]
-  reviews           Review[]
-  
-  @@map("users")
+  sessions        Session[]
+  orders          Order[]
+  subscriptions   Subscription[]
+  downloads       Download[]
+  supportTickets  SupportTicket[]
+  supportMessages SupportMessage[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  payments        Payment[]
+  invoices        Invoice[]
+  reviews         Review[]
+
   @@index([email])
   @@index([stripeCustomerId])
   @@index([status])
   @@index([role])
   @@index([createdAt])
+  @@map("users")
 }
 
 model Session {
@@ -195,18 +195,18 @@ model Session {
   ipAddress String?
   userAgent String?
   createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("sessions")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([token])
   @@index([expiresAt])
+  @@map("sessions")
 }
 
 model Address {
-  id           String            @id @default(cuid())
-  userId       String            @unique
+  id           String           @id @default(cuid())
+  userId       String           @unique
   firstName    String
   lastName     String
   company      String?
@@ -215,20 +215,20 @@ model Address {
   city         String
   province     CanadianProvince
   postalCode   String
-  country      String            @default("CA")
+  country      String           @default("CA")
   phone        String?
-  isDefault    Boolean           @default(true)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  billingOrders  Order[]         @relation("BillingAddress")
-  shippingOrders Order[]         @relation("ShippingAddress")
-  
-  @@map("addresses")
+  isDefault    Boolean          @default(true)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  user           User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  billingOrders  Order[] @relation("BillingAddress")
+  shippingOrders Order[] @relation("ShippingAddress")
+
   @@index([userId])
   @@index([province])
   @@index([postalCode])
+  @@map("addresses")
 }
 
 // ============================================================================
@@ -236,90 +236,90 @@ model Address {
 // ============================================================================
 
 model Category {
-  id          String    @id @default(cuid())
-  name        String    @unique
-  slug        String    @unique
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
   description String?
   imageUrl    String?
   parentId    String?
-  sortOrder   Int       @default(0)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  
-  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    Category[] @relation("CategoryHierarchy")
-  products    Product[]
-  
-  @@map("categories")
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+  products Product[]
+
   @@index([slug])
   @@index([parentId])
   @@index([isActive])
+  @@map("categories")
 }
 
 model Product {
-  id                String        @id @default(cuid())
-  name              String
-  slug              String        @unique
-  description       String?
-  shortDescription  String?
-  type              ProductType   @default(DIGITAL)
-  status            ProductStatus @default(DRAFT)
-  
+  id               String        @id @default(cuid())
+  name             String
+  slug             String        @unique
+  description      String?
+  shortDescription String?
+  type             ProductType   @default(DIGITAL)
+  status           ProductStatus @default(DRAFT)
+
   // Pricing (in cents, CAD)
-  price             Int
-  compareAtPrice    Int?
-  costPerItem       Int?
-  
+  price          Int
+  compareAtPrice Int?
+  costPerItem    Int?
+
   // Stripe Integration
-  stripeProductId   String?       @unique
-  stripePriceId     String?       @unique
-  
+  stripeProductId String? @unique
+  stripePriceId   String? @unique
+
   // Digital Product Specific
-  downloadUrl       String?
-  downloadLimit     Int?          // null = unlimited downloads
-  downloadExpiry    Int?          // days after purchase
-  fileSize          Int?          // in bytes
-  fileMimeType      String?
-  
+  downloadUrl    String?
+  downloadLimit  Int? // null = unlimited downloads
+  downloadExpiry Int? // days after purchase
+  fileSize       Int? // in bytes
+  fileMimeType   String?
+
   // Physical Product Specific
-  sku               String?       @unique
-  barcode           String?
-  weight            Decimal?      // in grams
-  requiresShipping  Boolean       @default(false)
-  
+  sku              String?  @unique
+  barcode          String?
+  weight           Float? // in grams
+  requiresShipping Boolean  @default(false)
+
   // Inventory
-  trackInventory    Boolean       @default(false)
+  trackInventory    Boolean @default(false)
   inventoryQuantity Int?
-  allowBackorder    Boolean       @default(false)
-  
+  allowBackorder    Boolean @default(false)
+
   // SEO & Marketing
-  metaTitle         String?
-  metaDescription   String?
-  metaKeywords      String?
-  featured          Boolean       @default(false)
-  
+  metaTitle       String?
+  metaDescription String?
+  metaKeywords    String?
+  featured        Boolean @default(false)
+
   // Category & Organization
-  categoryId        String?
-  tags              String[]
-  sortOrder         Int           @default(0)
-  
+  categoryId String?
+  tags       String? // JSON string for array storage in SQLite
+  sortOrder  Int      @default(0)
+
   // Timestamps
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  publishedAt       DateTime?
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  publishedAt DateTime?
+
   // Relations
-  category          Category?     @relation(fields: [categoryId], references: [id])
+  category          Category?          @relation(fields: [categoryId], references: [id])
   variants          ProductVariant[]
   images            ProductImage[]
   orderItems        OrderItem[]
   bundleItems       BundleItem[]
+  bundles           BundleItem[]       @relation("BundleToProduct")
   subscriptionPlans SubscriptionPlan[]
   downloads         Download[]
   reviews           Review[]
-  
-  @@map("products")
+
   @@index([slug])
   @@index([type])
   @@index([status])
@@ -327,47 +327,48 @@ model Product {
   @@index([featured])
   @@index([createdAt])
   @@index([price])
+  @@map("products")
 }
 
 model ProductVariant {
-  id                String   @id @default(cuid())
-  productId         String
-  name              String
-  sku               String?  @unique
-  
+  id        String  @id @default(cuid())
+  productId String
+  name      String
+  sku       String? @unique
+
   // Pricing (in cents, CAD)
-  price             Int?
-  compareAtPrice    Int?
-  costPerItem       Int?
-  
+  price          Int?
+  compareAtPrice Int?
+  costPerItem    Int?
+
   // Stripe Integration
-  stripePriceId     String?  @unique
-  
+  stripePriceId String? @unique
+
   // Variant Options (e.g., size, color, flavor)
-  option1           String?
-  option2           String?
-  option3           String?
-  
+  option1 String?
+  option2 String?
+  option3 String?
+
   // Inventory
   inventoryQuantity Int?
-  weight            Decimal? // in grams
-  
+  weight            Float? // in grams
+
   // Status
-  isActive          Boolean  @default(true)
-  sortOrder         Int      @default(0)
-  
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
   // Timestamps
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  orderItems        OrderItem[]
-  
-  @@map("product_variants")
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+
   @@index([productId])
   @@index([sku])
   @@index([stripePriceId])
+  @@map("product_variants")
 }
 
 model ProductImage {
@@ -378,29 +379,29 @@ model ProductImage {
   sortOrder Int      @default(0)
   isPrimary Boolean  @default(false)
   createdAt DateTime @default(now())
-  
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  @@map("product_images")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@index([productId])
   @@index([isPrimary])
+  @@map("product_images")
 }
 
 model BundleItem {
-  id        String  @id @default(cuid())
+  id        String @id @default(cuid())
   bundleId  String
   productId String
-  quantity  Int     @default(1)
-  discount  Int?    // discount in cents
-  sortOrder Int     @default(0)
-  
-  bundle    Product @relation("BundleToProduct", fields: [bundleId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  @@map("bundle_items")
+  quantity  Int    @default(1)
+  discount  Int? // discount in cents
+  sortOrder Int    @default(0)
+
+  bundle  Product @relation("BundleToProduct", fields: [bundleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@unique([bundleId, productId])
   @@index([bundleId])
   @@index([productId])
+  @@map("bundle_items")
 }
 
 // ============================================================================
@@ -408,83 +409,83 @@ model BundleItem {
 // ============================================================================
 
 model SubscriptionPlan {
-  id              String   @id @default(cuid())
-  productId       String
-  name            String
-  description     String?
-  
+  id          String  @id @default(cuid())
+  productId   String
+  name        String
+  description String?
+
   // Pricing (in cents, CAD)
   price           Int
-  billingInterval String   // 'month', 'year'
-  trialDays       Int?     @default(0)
-  
+  billingInterval String // 'month', 'year'
+  trialDays       Int?   @default(0)
+
   // Stripe Integration
-  stripePriceId   String   @unique
-  
+  stripePriceId String @unique
+
   // Features
-  features        Json?    // JSON array of features
-  maxUsers        Int?     // for team plans
-  maxDownloads    Int?     // for digital products
-  
+  features     Json? // JSON array of features
+  maxUsers     Int? // for team plans
+  maxDownloads Int? // for digital products
+
   // Status
-  isActive        Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
   // Timestamps
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  subscriptions   Subscription[]
-  
-  @@map("subscription_plans")
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
   @@index([productId])
   @@index([stripePriceId])
   @@index([isActive])
+  @@map("subscription_plans")
 }
 
 model Subscription {
-  id                    String             @id @default(cuid())
-  userId                String
-  planId                String
-  
+  id     String @id @default(cuid())
+  userId String
+  planId String
+
   // Stripe Integration
-  stripeSubscriptionId  String             @unique
-  stripeCustomerId      String
-  
+  stripeSubscriptionId String @unique
+  stripeCustomerId     String
+
   // Status & Billing
-  status                SubscriptionStatus @default(INCOMPLETE)
-  currentPeriodStart    DateTime
-  currentPeriodEnd      DateTime
-  cancelAtPeriodEnd     Boolean            @default(false)
-  canceledAt            DateTime?
-  endedAt               DateTime?
-  trialStart            DateTime?
-  trialEnd              DateTime?
-  
+  status             SubscriptionStatus @default(INCOMPLETE)
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  canceledAt         DateTime?
+  endedAt            DateTime?
+  trialStart         DateTime?
+  trialEnd           DateTime?
+
   // Pricing (in cents, CAD)
-  price                 Int
-  quantity              Int                @default(1)
-  
+  price    Int
+  quantity Int @default(1)
+
   // Metadata
-  metadata              Json?
-  
+  metadata Json?
+
   // Timestamps
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan                  SubscriptionPlan   @relation(fields: [planId], references: [id])
-  invoices              Invoice[]
-  
-  @@map("subscriptions")
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan     SubscriptionPlan @relation(fields: [planId], references: [id])
+  invoices Invoice[]
+
   @@index([userId])
   @@index([planId])
   @@index([stripeSubscriptionId])
   @@index([status])
   @@index([currentPeriodEnd])
+  @@map("subscriptions")
 }
 
 // ============================================================================
@@ -492,106 +493,106 @@ model Subscription {
 // ============================================================================
 
 model Order {
-  id                String      @id @default(cuid())
-  userId            String?
-  orderNumber       String      @unique
-  
+  id          String  @id @default(cuid())
+  userId      String?
+  orderNumber String  @unique
+
   // Stripe Integration
   stripePaymentIntentId String? @unique
   stripeSessionId       String? @unique
-  
+
   // Order Details
-  status            OrderStatus @default(PENDING)
-  
+  status OrderStatus @default(PENDING)
+
   // Pricing (in cents, CAD)
-  subtotal          Int
-  taxAmount         Int         @default(0)
-  shippingAmount    Int         @default(0)
-  discountAmount    Int         @default(0)
-  totalAmount       Int
-  currency          String      @default("CAD")
-  
+  subtotal       Int
+  taxAmount      Int    @default(0)
+  shippingAmount Int    @default(0)
+  discountAmount Int    @default(0)
+  totalAmount    Int
+  currency       String @default("CAD")
+
   // Customer Information
-  customerEmail     String
-  customerPhone     String?
-  
+  customerEmail String
+  customerPhone String?
+
   // Billing Address
-  billingAddressId  String?
-  
+  billingAddressId String?
+
   // Shipping Address (for physical products)
   shippingAddressId String?
   shippingMethod    String?
   trackingNumber    String?
   shippedAt         DateTime?
   deliveredAt       DateTime?
-  
+
   // Promo Code
-  promoCodeId       String?
-  
+  promoCodeId String?
+
   // Notes
-  customerNotes     String?
-  adminNotes        String?
-  
+  customerNotes String?
+  adminNotes    String?
+
   // Tax Information
-  taxBreakdown      Json?       // Detailed tax breakdown for Canadian compliance
-  
+  taxBreakdown Json? // Detailed tax breakdown for Canadian compliance
+
   // Timestamps
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  completedAt       DateTime?
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
   // Relations
-  user              User?       @relation(fields: [userId], references: [id])
-  billingAddress    Address?    @relation("BillingAddress", fields: [billingAddressId], references: [id])
-  shippingAddress   Address?    @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
-  promoCode         PromoCode?  @relation(fields: [promoCodeId], references: [id])
-  items             OrderItem[]
-  payments          Payment[]
-  refunds           Refund[]
-  
-  @@map("orders")
+  user            User?       @relation(fields: [userId], references: [id])
+  billingAddress  Address?    @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  shippingAddress Address?    @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  promoCode       PromoCode?  @relation(fields: [promoCodeId], references: [id])
+  items           OrderItem[]
+  payments        Payment[]
+  refunds         Refund[]
+
   @@index([userId])
   @@index([orderNumber])
   @@index([status])
   @@index([stripePaymentIntentId])
   @@index([createdAt])
   @@index([customerEmail])
+  @@map("orders")
 }
 
 model OrderItem {
-  id              String          @id @default(cuid())
-  orderId         String
-  productId       String
-  variantId       String?
-  
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  variantId String?
+
   // Item Details
-  name            String
-  description     String?
-  sku             String?
-  quantity        Int             @default(1)
-  
+  name        String
+  description String?
+  sku         String?
+  quantity    Int     @default(1)
+
   // Pricing (in cents, CAD) - captured at time of order
-  unitPrice       Int
-  totalPrice      Int
-  
+  unitPrice  Int
+  totalPrice Int
+
   // Digital Product Access
-  downloadLimit   Int?
-  downloadExpiry  DateTime?
-  
+  downloadLimit  Int?
+  downloadExpiry DateTime?
+
   // Timestamps
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  order           Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product         Product         @relation(fields: [productId], references: [id])
-  variant         ProductVariant? @relation(fields: [variantId], references: [id])
-  downloads       Download[]
-  
-  @@map("order_items")
+  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product         @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  downloads Download[]
+
   @@index([orderId])
   @@index([productId])
   @@index([variantId])
+  @@map("order_items")
 }
 
 // ============================================================================
@@ -599,87 +600,87 @@ model OrderItem {
 // ============================================================================
 
 model Payment {
-  id                    String        @id @default(cuid())
-  orderId               String?
-  userId                String?
-  
+  id      String  @id @default(cuid())
+  orderId String?
+  userId  String?
+
   // Stripe Integration
-  stripePaymentIntentId String        @unique
+  stripePaymentIntentId String  @unique
   stripePaymentMethodId String?
   stripeChargeId        String?
-  
+
   // Payment Details
-  status                PaymentStatus @default(PENDING)
-  amount                Int           // in cents, CAD
-  currency              String        @default("CAD")
-  paymentMethod         String?       // card, bank_transfer, etc.
-  
+  status        PaymentStatus @default(PENDING)
+  amount        Int // in cents, CAD
+  currency      String        @default("CAD")
+  paymentMethod String? // card, bank_transfer, etc.
+
   // Fees and Processing
-  stripeFee             Int?          // Stripe processing fee
-  applicationFee        Int?          // Our application fee
-  netAmount             Int?          // Amount after fees
-  
+  stripeFee      Int? // Stripe processing fee
+  applicationFee Int? // Our application fee
+  netAmount      Int? // Amount after fees
+
   // Metadata
-  description           String?
-  metadata              Json?
-  receiptUrl            String?
-  
+  description String?
+  metadata    Json?
+  receiptUrl  String?
+
   // Failure Information
-  failureCode           String?
-  failureMessage        String?
-  
+  failureCode    String?
+  failureMessage String?
+
   // Timestamps
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  processedAt           DateTime?
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  processedAt DateTime?
+
   // Relations
-  order                 Order?        @relation(fields: [orderId], references: [id])
-  user                  User?         @relation(fields: [userId], references: [id])
-  refunds               Refund[]
-  
-  @@map("payments")
+  order   Order?   @relation(fields: [orderId], references: [id])
+  user    User?    @relation(fields: [userId], references: [id])
+  refunds Refund[]
+
   @@index([orderId])
   @@index([userId])
   @@index([stripePaymentIntentId])
   @@index([status])
   @@index([createdAt])
+  @@map("payments")
 }
 
 model Refund {
-  id              String       @id @default(cuid())
-  orderId         String
-  paymentId       String
-  
+  id        String @id @default(cuid())
+  orderId   String
+  paymentId String
+
   // Stripe Integration
-  stripeRefundId  String       @unique
-  
+  stripeRefundId String @unique
+
   // Refund Details
-  status          RefundStatus @default(PENDING)
-  amount          Int          // in cents, CAD
-  currency        String       @default("CAD")
-  reason          String?      // requested_by_customer, fraudulent, etc.
-  description     String?
-  
+  status      RefundStatus @default(PENDING)
+  amount      Int // in cents, CAD
+  currency    String       @default("CAD")
+  reason      String? // requested_by_customer, fraudulent, etc.
+  description String?
+
   // Admin Information
-  processedBy     String?      // Admin user ID who processed the refund
-  adminNotes      String?
-  
+  processedBy String? // Admin user ID who processed the refund
+  adminNotes  String?
+
   // Timestamps
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  processedAt     DateTime?
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  processedAt DateTime?
+
   // Relations
-  order           Order        @relation(fields: [orderId], references: [id])
-  payment         Payment      @relation(fields: [paymentId], references: [id])
-  
-  @@map("refunds")
+  order   Order   @relation(fields: [orderId], references: [id])
+  payment Payment @relation(fields: [paymentId], references: [id])
+
   @@index([orderId])
   @@index([paymentId])
   @@index([stripeRefundId])
   @@index([status])
   @@index([createdAt])
+  @@map("refunds")
 }
 
 // ============================================================================
@@ -687,50 +688,50 @@ model Refund {
 // ============================================================================
 
 model Invoice {
-  id                String        @id @default(cuid())
-  subscriptionId    String?
-  userId            String
-  
+  id             String  @id @default(cuid())
+  subscriptionId String?
+  userId         String
+
   // Stripe Integration
-  stripeInvoiceId   String        @unique
-  
+  stripeInvoiceId String @unique
+
   // Invoice Details
-  invoiceNumber     String        @unique
-  status            InvoiceStatus @default(DRAFT)
-  
+  invoiceNumber String        @unique
+  status        InvoiceStatus @default(DRAFT)
+
   // Amounts (in cents, CAD)
-  subtotal          Int
-  taxAmount         Int           @default(0)
-  discountAmount    Int           @default(0)
-  totalAmount       Int
-  amountPaid        Int           @default(0)
-  amountDue         Int
-  currency          String        @default("CAD")
-  
+  subtotal       Int
+  taxAmount      Int    @default(0)
+  discountAmount Int    @default(0)
+  totalAmount    Int
+  amountPaid     Int    @default(0)
+  amountDue      Int
+  currency       String @default("CAD")
+
   // Dates
-  invoiceDate       DateTime
-  dueDate           DateTime?
-  paidAt            DateTime?
-  
+  invoiceDate DateTime
+  dueDate     DateTime?
+  paidAt      DateTime?
+
   // URLs
-  hostedInvoiceUrl  String?
-  invoicePdf        String?
-  
+  hostedInvoiceUrl String?
+  invoicePdf       String?
+
   // Timestamps
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  subscription      Subscription? @relation(fields: [subscriptionId], references: [id])
-  user              User          @relation(fields: [userId], references: [id])
-  
-  @@map("invoices")
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+  user         User          @relation(fields: [userId], references: [id])
+
   @@index([subscriptionId])
   @@index([userId])
   @@index([stripeInvoiceId])
   @@index([status])
   @@index([invoiceDate])
   @@index([dueDate])
+  @@map("invoices")
 }
 
 // ============================================================================
@@ -738,41 +739,41 @@ model Invoice {
 // ============================================================================
 
 model PromoCode {
-  id                String        @id @default(cuid())
-  code              String        @unique
-  name              String
-  description       String?
-  type              PromoCodeType
-  
+  id          String        @id @default(cuid())
+  code        String        @unique
+  name        String
+  description String?
+  type        PromoCodeType
+
   // Discount Values
-  discountPercent   Int?          // for percentage discounts (0-100)
-  discountAmount    Int?          // for fixed amount discounts (in cents)
-  
+  discountPercent Int? // for percentage discounts (0-100)
+  discountAmount  Int? // for fixed amount discounts (in cents)
+
   // Usage Limits
-  usageLimit        Int?          // null = unlimited
-  usageCount        Int           @default(0)
-  perCustomerLimit  Int?          // limit per customer
-  
+  usageLimit       Int? // null = unlimited
+  usageCount       Int  @default(0)
+  perCustomerLimit Int? // limit per customer
+
   // Conditions
-  minimumAmount     Int?          // minimum order amount (in cents)
-  applicableProducts String[]     // product IDs this code applies to
-  
+  minimumAmount      Int? // minimum order amount (in cents)
+  applicableProducts String? // JSON string for product IDs this code applies to
+
   // Validity
-  isActive          Boolean       @default(true)
-  startsAt          DateTime?
-  expiresAt         DateTime?
-  
+  isActive  Boolean   @default(true)
+  startsAt  DateTime?
+  expiresAt DateTime?
+
   // Timestamps
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  orders            Order[]
-  
-  @@map("promo_codes")
+  orders Order[]
+
   @@index([code])
   @@index([isActive])
   @@index([expiresAt])
+  @@map("promo_codes")
 }
 
 // ============================================================================
@@ -780,24 +781,24 @@ model PromoCode {
 // ============================================================================
 
 model TaxRate {
-  id          String           @id @default(cuid())
-  province    CanadianProvince
-  taxType     TaxType
-  rate        Decimal          @db.Decimal(5,4) // e.g., 0.0500 for 5%
-  name        String           // e.g., "Ontario HST"
-  description String?
-  isActive    Boolean          @default(true)
+  id            String           @id @default(cuid())
+  province      CanadianProvince
+  taxType       TaxType
+  rate          Float // e.g., 0.0500 for 5%
+  name          String // e.g., "Ontario HST"
+  description   String?
+  isActive      Boolean          @default(true)
   effectiveFrom DateTime
   effectiveTo   DateTime?
-  
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  
-  @@map("tax_rates")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([province, taxType, effectiveFrom])
   @@index([province])
   @@index([isActive])
   @@index([effectiveFrom])
+  @@map("tax_rates")
 }
 
 // ============================================================================
@@ -805,42 +806,42 @@ model TaxRate {
 // ============================================================================
 
 model Download {
-  id              String    @id @default(cuid())
-  userId          String
-  productId       String
-  orderItemId     String?
-  
+  id          String  @id @default(cuid())
+  userId      String
+  productId   String
+  orderItemId String?
+
   // Download Details
-  fileName        String
-  originalUrl     String
-  secureUrl       String    // Signed URL for secure downloads
-  fileSize        Int       // in bytes
-  mimeType        String
-  
+  fileName    String
+  originalUrl String
+  secureUrl   String // Signed URL for secure downloads
+  fileSize    Int // in bytes
+  mimeType    String
+
   // Access Control
-  downloadCount   Int       @default(0)
-  downloadLimit   Int?      // null = unlimited
-  expiresAt       DateTime?
-  
+  downloadCount Int       @default(0)
+  downloadLimit Int? // null = unlimited
+  expiresAt     DateTime?
+
   // Status
-  isActive        Boolean   @default(true)
-  
+  isActive Boolean @default(true)
+
   // Timestamps
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  lastDownloadAt  DateTime?
-  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastDownloadAt DateTime?
+
   // Relations
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product         Product   @relation(fields: [productId], references: [id])
-  orderItem       OrderItem? @relation(fields: [orderItemId], references: [id])
-  
-  @@map("downloads")
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product    @relation(fields: [productId], references: [id])
+  orderItem OrderItem? @relation(fields: [orderItemId], references: [id])
+
   @@index([userId])
   @@index([productId])
   @@index([orderItemId])
   @@index([expiresAt])
   @@index([isActive])
+  @@map("downloads")
 }
 
 // ============================================================================
@@ -848,38 +849,38 @@ model Download {
 // ============================================================================
 
 model Review {
-  id          String   @id @default(cuid())
-  userId      String
-  productId   String
-  orderId     String?  // Optional: link to order for verified purchases
-  
+  id        String  @id @default(cuid())
+  userId    String
+  productId String
+  orderId   String? // Optional: link to order for verified purchases
+
   // Review Content
-  rating      Int      // 1-5 stars
-  title       String?
-  content     String?
-  
+  rating  Int // 1-5 stars
+  title   String?
+  content String?
+
   // Status
-  isApproved  Boolean  @default(false)
-  isVerified  Boolean  @default(false) // Verified purchase
-  
+  isApproved Boolean @default(false)
+  isVerified Boolean @default(false) // Verified purchase
+
   // Moderation
-  moderatedBy String?  // Admin user ID
+  moderatedBy String? // Admin user ID
   moderatedAt DateTime?
-  
+
   // Timestamps
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  
-  @@map("reviews")
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@unique([userId, productId]) // One review per user per product
   @@index([productId])
   @@index([rating])
   @@index([isApproved])
   @@index([createdAt])
+  @@map("reviews")
 }
 
 // ============================================================================
@@ -887,35 +888,35 @@ model Review {
 // ============================================================================
 
 model SupportTicket {
-  id          String               @id @default(cuid())
+  id          String              @id @default(cuid())
   userId      String?
   subject     String
   description String
-  status      SupportTicketStatus  @default(OPEN)
-  priority    SupportPriority      @default(MEDIUM)
+  status      SupportTicketStatus @default(OPEN)
+  priority    SupportPriority     @default(MEDIUM)
   category    String?
-  
+
   // Assignment
-  assignedTo  String?              // Support agent user ID
-  
+  assignedTo String? // Support agent user ID
+
   // Customer Information (for guest tickets)
   customerEmail String?
   customerName  String?
-  
+
   // Timestamps
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
-  resolvedAt  DateTime?
-  
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
   // Relations
-  user        User?                @relation(fields: [userId], references: [id])
-  messages    SupportMessage[]
-  
-  @@map("support_tickets")
+  user     User?            @relation(fields: [userId], references: [id])
+  messages SupportMessage[]
+
   @@index([userId])
   @@index([status])
   @@index([assignedTo])
   @@index([createdAt])
+  @@map("support_tickets")
 }
 
 enum SupportTicketStatus {
@@ -934,23 +935,23 @@ enum SupportPriority {
 }
 
 model SupportMessage {
-  id          String        @id @default(cuid())
+  id          String   @id @default(cuid())
   ticketId    String
-  userId      String?       // null for system messages
+  userId      String? // null for system messages
   message     String
-  isInternal  Boolean       @default(false) // Internal notes not visible to customer
-  attachments String[]      // URLs to attachments
-  
-  createdAt   DateTime      @default(now())
-  
+  isInternal  Boolean  @default(false) // Internal notes not visible to customer
+  attachments String? // JSON string for URLs to attachments
+
+  createdAt DateTime @default(now())
+
   // Relations
-  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  user        User?         @relation(fields: [userId], references: [id])
-  
-  @@map("support_messages")
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  user   User?         @relation(fields: [userId], references: [id])
+
   @@index([ticketId])
   @@index([userId])
   @@index([createdAt])
+  @@map("support_messages")
 }
 
 // ============================================================================
@@ -958,38 +959,38 @@ model SupportMessage {
 // ============================================================================
 
 model Notification {
-  id          String             @id @default(cuid())
-  userId      String
-  type        NotificationType
-  title       String
-  message     String
-  status      NotificationStatus @default(PENDING)
-  
+  id      String             @id @default(cuid())
+  userId  String
+  type    NotificationType
+  title   String
+  message String
+  status  NotificationStatus @default(PENDING)
+
   // Channels
-  email       Boolean            @default(false)
-  sms         Boolean            @default(false)
-  inApp       Boolean            @default(true)
-  
+  email Boolean @default(false)
+  sms   Boolean @default(false)
+  inApp Boolean @default(true)
+
   // Email specific
   emailSubject String?
   emailHtml    String?
-  
+
   // Metadata
-  data        Json?              // Additional data for the notification
-  
+  data Json? // Additional data for the notification
+
   // Timestamps
-  createdAt   DateTime           @default(now())
-  sentAt      DateTime?
-  readAt      DateTime?
-  
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+  readAt    DateTime?
+
   // Relations
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("notifications")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([status])
   @@index([type])
   @@index([createdAt])
+  @@map("notifications")
 }
 
 enum NotificationType {
@@ -1010,38 +1011,38 @@ enum NotificationType {
 // ============================================================================
 
 model AuditLog {
-  id          String      @id @default(cuid())
-  userId      String?
-  action      AuditAction
-  resource    String      // e.g., 'order', 'user', 'product'
-  resourceId  String?
-  
+  id         String      @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  resource   String // e.g., 'order', 'user', 'product'
+  resourceId String?
+
   // Change Details
-  oldValues   Json?       // Previous state
-  newValues   Json?       // New state
-  
+  oldValues Json? // Previous state
+  newValues Json? // New state
+
   // Request Context
-  ipAddress   String?
-  userAgent   String?
-  endpoint    String?
-  method      String?
-  
+  ipAddress String?
+  userAgent String?
+  endpoint  String?
+  method    String?
+
   // Additional Context
   metadata    Json?
   description String?
-  
+
   // Timestamp
-  createdAt   DateTime    @default(now())
-  
+  createdAt DateTime @default(now())
+
   // Relations
-  user        User?       @relation(fields: [userId], references: [id])
-  
-  @@map("audit_logs")
+  user User? @relation(fields: [userId], references: [id])
+
   @@index([userId])
   @@index([action])
   @@index([resource])
   @@index([createdAt])
   @@index([ipAddress])
+  @@map("audit_logs")
 }
 
 // ============================================================================
@@ -1049,36 +1050,36 @@ model AuditLog {
 // ============================================================================
 
 model AnalyticsEvent {
-  id            String   @id @default(cuid())
+  id            String  @id @default(cuid())
   userId        String?
   sessionId     String?
-  eventType     String   // 'page_view', 'product_view', 'add_to_cart', etc.
+  eventType     String // 'page_view', 'product_view', 'add_to_cart', etc.
   eventCategory String?
   eventAction   String?
   eventLabel    String?
   eventValue    Int?
-  
+
   // Page/Product Context
-  page          String?
-  productId     String?
-  
+  page      String?
+  productId String?
+
   // User Context
-  ipAddress     String?
-  userAgent     String?
-  referrer      String?
-  
+  ipAddress String?
+  userAgent String?
+  referrer  String?
+
   // Additional Data
-  metadata      Json?
-  
+  metadata Json?
+
   // Timestamp
-  createdAt     DateTime @default(now())
-  
-  @@map("analytics_events")
+  createdAt DateTime @default(now())
+
   @@index([userId])
   @@index([sessionId])
   @@index([eventType])
   @@index([productId])
   @@index([createdAt])
+  @@map("analytics_events")
 }
 
 // ============================================================================
@@ -1086,19 +1087,19 @@ model AnalyticsEvent {
 // ============================================================================
 
 model SystemSetting {
-  id          String   @id @default(cuid())
-  key         String   @unique
+  id          String  @id @default(cuid())
+  key         String  @unique
   value       String
   description String?
-  category    String?  // 'payment', 'email', 'general', etc.
-  isPublic    Boolean  @default(false) // If setting should be exposed to frontend
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
-  @@map("system_settings")
+  category    String? // 'payment', 'email', 'general', etc.
+  isPublic    Boolean @default(false) // If setting should be exposed to frontend
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([category])
   @@index([isPublic])
+  @@map("system_settings")
 }
 
 // ============================================================================
