@@ -3,8 +3,12 @@
  * Provides detailed health status and statistics for the PostgreSQL database
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { getDatabaseStats, performHealthCheck } from '@/lib/database/connection'
+import { NextRequest, NextResponse } from 'next/server';
+
+import {
+  getDatabaseStats,
+  performHealthCheck,
+} from '@/lib/database/connection';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +16,7 @@ export async function GET(request: NextRequest) {
     const [stats, healthCheck] = await Promise.all([
       getDatabaseStats(),
       performHealthCheck(),
-    ])
+    ]);
 
     // Combine results
     const response = {
@@ -24,15 +28,15 @@ export async function GET(request: NextRequest) {
       },
       checks: healthCheck.checks,
       environment: process.env.NODE_ENV,
-    }
+    };
 
     // Return appropriate status code
-    const statusCode = healthCheck.status === 'healthy' ? 200 : 503
+    const statusCode = healthCheck.status === 'healthy' ? 200 : 503;
 
-    return NextResponse.json(response, { status: statusCode })
+    return NextResponse.json(response, { status: statusCode });
   } catch (error) {
-    console.error('Database health check failed:', error)
-    
+    console.error('Database health check failed:', error);
+
     return NextResponse.json(
       {
         timestamp: new Date().toISOString(),
@@ -41,17 +45,17 @@ export async function GET(request: NextRequest) {
         environment: process.env.NODE_ENV,
       },
       { status: 503 }
-    )
+    );
   }
 }
 
 // Support HEAD requests for simple health checks
 export async function HEAD(request: NextRequest) {
   try {
-    const healthCheck = await performHealthCheck()
-    const statusCode = healthCheck.status === 'healthy' ? 200 : 503
-    return new NextResponse(null, { status: statusCode })
+    const healthCheck = await performHealthCheck();
+    const statusCode = healthCheck.status === 'healthy' ? 200 : 503;
+    return new NextResponse(null, { status: statusCode });
   } catch (error) {
-    return new NextResponse(null, { status: 503 })
+    return new NextResponse(null, { status: 503 });
   }
 }

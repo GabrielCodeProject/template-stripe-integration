@@ -1,93 +1,185 @@
-import { PrismaClient, CanadianProvince, TaxType, UserRole, ProductType, ProductStatus } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import {
+  CanadianProvince,
+  PrismaClient,
+  ProductStatus,
+  ProductType,
+  TaxType,
+  UserRole,
+} from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting database seeding...')
+  console.log('🌱 Starting database seeding...');
 
   // Clear existing data in development
   if (process.env.NODE_ENV === 'development') {
-    console.log('🧹 Clearing existing development data...')
-    await clearDevelopmentData()
+    console.log('🧹 Clearing existing development data...');
+    await clearDevelopmentData();
   }
 
   // Seed Canadian tax rates
-  await seedTaxRates()
-  
+  await seedTaxRates();
+
   // Seed system settings
-  await seedSystemSettings()
-  
+  await seedSystemSettings();
+
   // Seed product categories
-  await seedCategories()
-  
+  await seedCategories();
+
   // Seed sample products (development only)
   if (process.env.NODE_ENV === 'development') {
-    await seedSampleProducts()
-    await seedSampleUsers()
+    await seedSampleProducts();
+    await seedSampleUsers();
   }
 
-  console.log('✅ Database seeding completed successfully!')
+  console.log('✅ Database seeding completed successfully!');
 }
 
 async function clearDevelopmentData() {
   // Clear in dependency order
-  await prisma.auditLog.deleteMany()
-  await prisma.analyticsEvent.deleteMany()
-  await prisma.notification.deleteMany()
-  await prisma.supportMessage.deleteMany()
-  await prisma.supportTicket.deleteMany()
-  await prisma.review.deleteMany()
-  await prisma.download.deleteMany()
-  await prisma.refund.deleteMany()
-  await prisma.payment.deleteMany()
-  await prisma.invoice.deleteMany()
-  await prisma.orderItem.deleteMany()
-  await prisma.order.deleteMany()
-  await prisma.subscription.deleteMany()
-  await prisma.subscriptionPlan.deleteMany()
-  await prisma.bundleItem.deleteMany()
-  await prisma.productImage.deleteMany()
-  await prisma.productVariant.deleteMany()
-  await prisma.product.deleteMany()
-  await prisma.category.deleteMany()
-  await prisma.address.deleteMany()
-  await prisma.session.deleteMany()
-  await prisma.user.deleteMany()
-  await prisma.promoCode.deleteMany()
-  
-  console.log('Development data cleared')
+  await prisma.auditLog.deleteMany();
+  await prisma.analyticsEvent.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.supportMessage.deleteMany();
+  await prisma.supportTicket.deleteMany();
+  await prisma.review.deleteMany();
+  await prisma.download.deleteMany();
+  await prisma.refund.deleteMany();
+  await prisma.payment.deleteMany();
+  await prisma.invoice.deleteMany();
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.subscription.deleteMany();
+  await prisma.subscriptionPlan.deleteMany();
+  await prisma.bundleItem.deleteMany();
+  await prisma.productImage.deleteMany();
+  await prisma.productVariant.deleteMany();
+  await prisma.product.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.address.deleteMany();
+  await prisma.session.deleteMany();
+  await prisma.user.deleteMany();
+  await prisma.promoCode.deleteMany();
+
+  console.log('Development data cleared');
 }
 
 async function seedTaxRates() {
-  console.log('💰 Seeding Canadian tax rates...')
-  
+  console.log('💰 Seeding Canadian tax rates...');
+
   const taxRates = [
     // GST (Federal - applies to all provinces)
-    { province: CanadianProvince.AB, taxType: TaxType.GST, rate: 0.05, name: "Alberta GST" },
-    { province: CanadianProvince.BC, taxType: TaxType.GST, rate: 0.05, name: "British Columbia GST" },
-    { province: CanadianProvince.MB, taxType: TaxType.GST, rate: 0.05, name: "Manitoba GST" },
-    { province: CanadianProvince.SK, taxType: TaxType.GST, rate: 0.05, name: "Saskatchewan GST" },
-    { province: CanadianProvince.QC, taxType: TaxType.GST, rate: 0.05, name: "Quebec GST" },
-    { province: CanadianProvince.NT, taxType: TaxType.GST, rate: 0.05, name: "Northwest Territories GST" },
-    { province: CanadianProvince.NU, taxType: TaxType.GST, rate: 0.05, name: "Nunavut GST" },
-    { province: CanadianProvince.YT, taxType: TaxType.GST, rate: 0.05, name: "Yukon GST" },
-    
+    {
+      province: CanadianProvince.AB,
+      taxType: TaxType.GST,
+      rate: 0.05,
+      name: 'Alberta GST',
+    },
+    {
+      province: CanadianProvince.BC,
+      taxType: TaxType.GST,
+      rate: 0.05,
+      name: 'British Columbia GST',
+    },
+    {
+      province: CanadianProvince.MB,
+      taxType: TaxType.GST,
+      rate: 0.05,
+      name: 'Manitoba GST',
+    },
+    {
+      province: CanadianProvince.SK,
+      taxType: TaxType.GST,
+      rate: 0.05,
+      name: 'Saskatchewan GST',
+    },
+    {
+      province: CanadianProvince.QC,
+      taxType: TaxType.GST,
+      rate: 0.05,
+      name: 'Quebec GST',
+    },
+    {
+      province: CanadianProvince.NT,
+      taxType: TaxType.GST,
+      rate: 0.05,
+      name: 'Northwest Territories GST',
+    },
+    {
+      province: CanadianProvince.NU,
+      taxType: TaxType.GST,
+      rate: 0.05,
+      name: 'Nunavut GST',
+    },
+    {
+      province: CanadianProvince.YT,
+      taxType: TaxType.GST,
+      rate: 0.05,
+      name: 'Yukon GST',
+    },
+
     // HST (Harmonized Sales Tax - replaces GST+PST)
-    { province: CanadianProvince.ON, taxType: TaxType.HST, rate: 0.13, name: "Ontario HST" },
-    { province: CanadianProvince.NB, taxType: TaxType.HST, rate: 0.15, name: "New Brunswick HST" },
-    { province: CanadianProvince.NL, taxType: TaxType.HST, rate: 0.15, name: "Newfoundland and Labrador HST" },
-    { province: CanadianProvince.NS, taxType: TaxType.HST, rate: 0.15, name: "Nova Scotia HST" },
-    { province: CanadianProvince.PE, taxType: TaxType.HST, rate: 0.15, name: "Prince Edward Island HST" },
-    
+    {
+      province: CanadianProvince.ON,
+      taxType: TaxType.HST,
+      rate: 0.13,
+      name: 'Ontario HST',
+    },
+    {
+      province: CanadianProvince.NB,
+      taxType: TaxType.HST,
+      rate: 0.15,
+      name: 'New Brunswick HST',
+    },
+    {
+      province: CanadianProvince.NL,
+      taxType: TaxType.HST,
+      rate: 0.15,
+      name: 'Newfoundland and Labrador HST',
+    },
+    {
+      province: CanadianProvince.NS,
+      taxType: TaxType.HST,
+      rate: 0.15,
+      name: 'Nova Scotia HST',
+    },
+    {
+      province: CanadianProvince.PE,
+      taxType: TaxType.HST,
+      rate: 0.15,
+      name: 'Prince Edward Island HST',
+    },
+
     // PST (Provincial Sales Tax)
-    { province: CanadianProvince.BC, taxType: TaxType.PST, rate: 0.07, name: "British Columbia PST" },
-    { province: CanadianProvince.MB, taxType: TaxType.PST, rate: 0.07, name: "Manitoba PST" },
-    { province: CanadianProvince.SK, taxType: TaxType.PST, rate: 0.06, name: "Saskatchewan PST" },
-    
+    {
+      province: CanadianProvince.BC,
+      taxType: TaxType.PST,
+      rate: 0.07,
+      name: 'British Columbia PST',
+    },
+    {
+      province: CanadianProvince.MB,
+      taxType: TaxType.PST,
+      rate: 0.07,
+      name: 'Manitoba PST',
+    },
+    {
+      province: CanadianProvince.SK,
+      taxType: TaxType.PST,
+      rate: 0.06,
+      name: 'Saskatchewan PST',
+    },
+
     // QST (Quebec Sales Tax)
-    { province: CanadianProvince.QC, taxType: TaxType.QST, rate: 0.09975, name: "Quebec Sales Tax" },
-  ]
+    {
+      province: CanadianProvince.QC,
+      taxType: TaxType.QST,
+      rate: 0.09975,
+      name: 'Quebec Sales Tax',
+    },
+  ];
 
   for (const taxRate of taxRates) {
     await prisma.taxRate.upsert({
@@ -95,77 +187,197 @@ async function seedTaxRates() {
         province_taxType_effectiveFrom: {
           province: taxRate.province,
           taxType: taxRate.taxType,
-          effectiveFrom: new Date('2024-01-01')
-        }
+          effectiveFrom: new Date('2024-01-01'),
+        },
       },
       update: {
         rate: taxRate.rate,
         name: taxRate.name,
-        isActive: true
+        isActive: true,
       },
       create: {
         ...taxRate,
         effectiveFrom: new Date('2024-01-01'),
         isActive: true,
-        description: `Current ${taxRate.name} rate as of 2024`
-      }
-    })
+        description: `Current ${taxRate.name} rate as of 2024`,
+      },
+    });
   }
 
-  console.log(`✅ Seeded ${taxRates.length} tax rates`)
+  console.log(`✅ Seeded ${taxRates.length} tax rates`);
 }
 
 async function seedSystemSettings() {
-  console.log('⚙️ Seeding system settings...')
-  
+  console.log('⚙️ Seeding system settings...');
+
   const settings = [
     // General Settings
-    { key: 'site_name', value: 'Stripe Payment Template', category: 'general', isPublic: true, description: 'Site name displayed in header and emails' },
-    { key: 'site_description', value: 'Complete NextJS Stripe payment solution', category: 'general', isPublic: true, description: 'Site description for SEO' },
-    { key: 'default_currency', value: 'CAD', category: 'general', isPublic: true, description: 'Default currency for pricing' },
-    { key: 'default_timezone', value: 'America/Toronto', category: 'general', isPublic: false, description: 'Default timezone for date calculations' },
-    
+    {
+      key: 'site_name',
+      value: 'Stripe Payment Template',
+      category: 'general',
+      isPublic: true,
+      description: 'Site name displayed in header and emails',
+    },
+    {
+      key: 'site_description',
+      value: 'Complete NextJS Stripe payment solution',
+      category: 'general',
+      isPublic: true,
+      description: 'Site description for SEO',
+    },
+    {
+      key: 'default_currency',
+      value: 'CAD',
+      category: 'general',
+      isPublic: true,
+      description: 'Default currency for pricing',
+    },
+    {
+      key: 'default_timezone',
+      value: 'America/Toronto',
+      category: 'general',
+      isPublic: false,
+      description: 'Default timezone for date calculations',
+    },
+
     // Payment Settings
-    { key: 'stripe_publishable_key', value: process.env.STRIPE_PUBLISHABLE_KEY || '', category: 'payment', isPublic: true, description: 'Stripe publishable key for frontend' },
-    { key: 'payment_success_url', value: '/checkout/success', category: 'payment', isPublic: true, description: 'Redirect URL after successful payment' },
-    { key: 'payment_cancel_url', value: '/checkout/cancel', category: 'payment', isPublic: true, description: 'Redirect URL after cancelled payment' },
-    { key: 'enable_promo_codes', value: 'true', category: 'payment', isPublic: true, description: 'Enable promo code functionality' },
-    
+    {
+      key: 'stripe_publishable_key',
+      value: process.env.STRIPE_PUBLISHABLE_KEY || '',
+      category: 'payment',
+      isPublic: true,
+      description: 'Stripe publishable key for frontend',
+    },
+    {
+      key: 'payment_success_url',
+      value: '/checkout/success',
+      category: 'payment',
+      isPublic: true,
+      description: 'Redirect URL after successful payment',
+    },
+    {
+      key: 'payment_cancel_url',
+      value: '/checkout/cancel',
+      category: 'payment',
+      isPublic: true,
+      description: 'Redirect URL after cancelled payment',
+    },
+    {
+      key: 'enable_promo_codes',
+      value: 'true',
+      category: 'payment',
+      isPublic: true,
+      description: 'Enable promo code functionality',
+    },
+
     // Email Settings
-    { key: 'from_email', value: 'noreply@yoursite.com', category: 'email', isPublic: false, description: 'Default from email address' },
-    { key: 'from_name', value: 'Stripe Payment Template', category: 'email', isPublic: false, description: 'Default from name for emails' },
-    { key: 'support_email', value: 'support@yoursite.com', category: 'email', isPublic: true, description: 'Support email address' },
-    
+    {
+      key: 'from_email',
+      value: 'noreply@yoursite.com',
+      category: 'email',
+      isPublic: false,
+      description: 'Default from email address',
+    },
+    {
+      key: 'from_name',
+      value: 'Stripe Payment Template',
+      category: 'email',
+      isPublic: false,
+      description: 'Default from name for emails',
+    },
+    {
+      key: 'support_email',
+      value: 'support@yoursite.com',
+      category: 'email',
+      isPublic: true,
+      description: 'Support email address',
+    },
+
     // Business Settings
-    { key: 'company_name', value: 'Your Company Inc.', category: 'business', isPublic: true, description: 'Legal company name' },
-    { key: 'company_address', value: '123 Business St, Toronto, ON M5V 1A1', category: 'business', isPublic: true, description: 'Company address for invoices' },
-    { key: 'business_number', value: '123456789RT0001', category: 'business', isPublic: false, description: 'CRA business number' },
-    
+    {
+      key: 'company_name',
+      value: 'Your Company Inc.',
+      category: 'business',
+      isPublic: true,
+      description: 'Legal company name',
+    },
+    {
+      key: 'company_address',
+      value: '123 Business St, Toronto, ON M5V 1A1',
+      category: 'business',
+      isPublic: true,
+      description: 'Company address for invoices',
+    },
+    {
+      key: 'business_number',
+      value: '123456789RT0001',
+      category: 'business',
+      isPublic: false,
+      description: 'CRA business number',
+    },
+
     // Feature Flags
-    { key: 'enable_reviews', value: 'true', category: 'features', isPublic: true, description: 'Enable product reviews' },
-    { key: 'enable_subscriptions', value: 'true', category: 'features', isPublic: true, description: 'Enable subscription products' },
-    { key: 'enable_digital_downloads', value: 'true', category: 'features', isPublic: true, description: 'Enable digital product downloads' },
-    { key: 'require_email_verification', value: 'true', category: 'features', isPublic: false, description: 'Require email verification for new users' },
-    
+    {
+      key: 'enable_reviews',
+      value: 'true',
+      category: 'features',
+      isPublic: true,
+      description: 'Enable product reviews',
+    },
+    {
+      key: 'enable_subscriptions',
+      value: 'true',
+      category: 'features',
+      isPublic: true,
+      description: 'Enable subscription products',
+    },
+    {
+      key: 'enable_digital_downloads',
+      value: 'true',
+      category: 'features',
+      isPublic: true,
+      description: 'Enable digital product downloads',
+    },
+    {
+      key: 'require_email_verification',
+      value: 'true',
+      category: 'features',
+      isPublic: false,
+      description: 'Require email verification for new users',
+    },
+
     // Analytics
-    { key: 'google_analytics_id', value: '', category: 'analytics', isPublic: true, description: 'Google Analytics tracking ID' },
-    { key: 'enable_analytics_tracking', value: 'true', category: 'analytics', isPublic: true, description: 'Enable internal analytics tracking' },
-  ]
+    {
+      key: 'google_analytics_id',
+      value: '',
+      category: 'analytics',
+      isPublic: true,
+      description: 'Google Analytics tracking ID',
+    },
+    {
+      key: 'enable_analytics_tracking',
+      value: 'true',
+      category: 'analytics',
+      isPublic: true,
+      description: 'Enable internal analytics tracking',
+    },
+  ];
 
   for (const setting of settings) {
     await prisma.systemSetting.upsert({
       where: { key: setting.key },
       update: setting,
-      create: setting
-    })
+      create: setting,
+    });
   }
 
-  console.log(`✅ Seeded ${settings.length} system settings`)
+  console.log(`✅ Seeded ${settings.length} system settings`);
 }
 
 async function seedCategories() {
-  console.log('📂 Seeding product categories...')
-  
+  console.log('📂 Seeding product categories...');
+
   // Parent categories
   const supplementsCategory = await prisma.category.upsert({
     where: { slug: 'supplements' },
@@ -175,30 +387,50 @@ async function seedCategories() {
       slug: 'supplements',
       description: 'Health and fitness supplements',
       sortOrder: 1,
-      isActive: true
-    }
-  })
+      isActive: true,
+    },
+  });
 
   const workoutPlansCategory = await prisma.category.upsert({
     where: { slug: 'workout-plans' },
     update: {},
     create: {
       name: 'Workout Plans',
-      slug: 'workout-plans', 
+      slug: 'workout-plans',
       description: 'Digital workout and training programs',
       sortOrder: 2,
-      isActive: true
-    }
-  })
+      isActive: true,
+    },
+  });
 
   // Supplement subcategories
   const supplementSubcategories = [
-    { name: 'Protein Powder', slug: 'protein-powder', description: 'Whey, casein, and plant-based proteins' },
-    { name: 'Pre-Workout', slug: 'pre-workout', description: 'Energy and performance boosters' },
-    { name: 'Post-Workout', slug: 'post-workout', description: 'Recovery and muscle building supplements' },
-    { name: 'Vitamins & Minerals', slug: 'vitamins-minerals', description: 'Essential vitamins and mineral supplements' },
-    { name: 'Weight Management', slug: 'weight-management', description: 'Fat burners and weight loss supplements' }
-  ]
+    {
+      name: 'Protein Powder',
+      slug: 'protein-powder',
+      description: 'Whey, casein, and plant-based proteins',
+    },
+    {
+      name: 'Pre-Workout',
+      slug: 'pre-workout',
+      description: 'Energy and performance boosters',
+    },
+    {
+      name: 'Post-Workout',
+      slug: 'post-workout',
+      description: 'Recovery and muscle building supplements',
+    },
+    {
+      name: 'Vitamins & Minerals',
+      slug: 'vitamins-minerals',
+      description: 'Essential vitamins and mineral supplements',
+    },
+    {
+      name: 'Weight Management',
+      slug: 'weight-management',
+      description: 'Fat burners and weight loss supplements',
+    },
+  ];
 
   for (const [index, subcategory] of supplementSubcategories.entries()) {
     await prisma.category.upsert({
@@ -210,19 +442,39 @@ async function seedCategories() {
         description: subcategory.description,
         parentId: supplementsCategory.id,
         sortOrder: index + 1,
-        isActive: true
-      }
-    })
+        isActive: true,
+      },
+    });
   }
 
   // Workout plan subcategories
   const workoutSubcategories = [
-    { name: 'Strength Training', slug: 'strength-training', description: 'Muscle building and strength programs' },
-    { name: 'Cardio Programs', slug: 'cardio-programs', description: 'Heart health and endurance training' },
-    { name: 'Yoga & Flexibility', slug: 'yoga-flexibility', description: 'Flexibility and mindfulness programs' },
-    { name: 'HIIT Training', slug: 'hiit-training', description: 'High-intensity interval training programs' },
-    { name: 'Beginner Programs', slug: 'beginner-programs', description: 'Programs designed for fitness beginners' }
-  ]
+    {
+      name: 'Strength Training',
+      slug: 'strength-training',
+      description: 'Muscle building and strength programs',
+    },
+    {
+      name: 'Cardio Programs',
+      slug: 'cardio-programs',
+      description: 'Heart health and endurance training',
+    },
+    {
+      name: 'Yoga & Flexibility',
+      slug: 'yoga-flexibility',
+      description: 'Flexibility and mindfulness programs',
+    },
+    {
+      name: 'HIIT Training',
+      slug: 'hiit-training',
+      description: 'High-intensity interval training programs',
+    },
+    {
+      name: 'Beginner Programs',
+      slug: 'beginner-programs',
+      description: 'Programs designed for fitness beginners',
+    },
+  ];
 
   for (const [index, subcategory] of workoutSubcategories.entries()) {
     await prisma.category.upsert({
@@ -234,24 +486,28 @@ async function seedCategories() {
         description: subcategory.description,
         parentId: workoutPlansCategory.id,
         sortOrder: index + 1,
-        isActive: true
-      }
-    })
+        isActive: true,
+      },
+    });
   }
 
-  console.log('✅ Seeded product categories with subcategories')
+  console.log('✅ Seeded product categories with subcategories');
 }
 
 async function seedSampleProducts() {
-  console.log('🛍️ Seeding sample products (development only)...')
-  
+  console.log('🛍️ Seeding sample products (development only)...');
+
   // Get categories
-  const proteinCategory = await prisma.category.findUnique({ where: { slug: 'protein-powder' } })
-  const strengthCategory = await prisma.category.findUnique({ where: { slug: 'strength-training' } })
-  
+  const proteinCategory = await prisma.category.findUnique({
+    where: { slug: 'protein-powder' },
+  });
+  const strengthCategory = await prisma.category.findUnique({
+    where: { slug: 'strength-training' },
+  });
+
   if (!proteinCategory || !strengthCategory) {
-    console.log('Categories not found, skipping product seeding')
-    return
+    console.log('Categories not found, skipping product seeding');
+    return;
   }
 
   // Sample supplement product
@@ -259,7 +515,8 @@ async function seedSampleProducts() {
     data: {
       name: 'Premium Whey Protein Isolate',
       slug: 'premium-whey-protein-isolate',
-      description: 'High-quality whey protein isolate with 25g protein per serving. Perfect for muscle building and recovery.',
+      description:
+        'High-quality whey protein isolate with 25g protein per serving. Perfect for muscle building and recovery.',
       shortDescription: 'Premium whey protein with 25g protein per serving',
       type: ProductType.PHYSICAL,
       status: ProductStatus.ACTIVE,
@@ -272,7 +529,8 @@ async function seedSampleProducts() {
       requiresShipping: true,
       weight: 2000, // 2kg
       metaTitle: 'Premium Whey Protein Isolate - Build Muscle Fast',
-      metaDescription: 'Get the best whey protein isolate in Canada. Fast absorption, great taste, and results you can see.',
+      metaDescription:
+        'Get the best whey protein isolate in Canada. Fast absorption, great taste, and results you can see.',
       featured: true,
       tags: JSON.stringify(['protein', 'whey', 'muscle-building', 'recovery']),
       images: {
@@ -281,15 +539,15 @@ async function seedSampleProducts() {
             url: '/images/products/protein-powder-1.jpg',
             altText: 'Premium Whey Protein Isolate - Front View',
             sortOrder: 1,
-            isPrimary: true
+            isPrimary: true,
           },
           {
             url: '/images/products/protein-powder-2.jpg',
             altText: 'Premium Whey Protein Isolate - Nutrition Facts',
             sortOrder: 2,
-            isPrimary: false
-          }
-        ]
+            isPrimary: false,
+          },
+        ],
       },
       variants: {
         create: [
@@ -302,7 +560,7 @@ async function seedSampleProducts() {
             inventoryQuantity: 25,
             weight: 2000,
             isActive: true,
-            sortOrder: 1
+            sortOrder: 1,
           },
           {
             name: 'Chocolate - 2kg',
@@ -313,20 +571,22 @@ async function seedSampleProducts() {
             inventoryQuantity: 25,
             weight: 2000,
             isActive: true,
-            sortOrder: 2
-          }
-        ]
-      }
-    }
-  })
+            sortOrder: 2,
+          },
+        ],
+      },
+    },
+  });
 
   // Sample digital workout plan
   const workoutPlan = await prisma.product.create({
     data: {
       name: '12-Week Strength Building Program',
       slug: '12-week-strength-building-program',
-      description: 'Complete 12-week strength training program designed by certified trainers. Includes workout videos, nutrition guide, and progress tracking.',
-      shortDescription: 'Complete 12-week strength training program with videos and guides',
+      description:
+        'Complete 12-week strength training program designed by certified trainers. Includes workout videos, nutrition guide, and progress tracking.',
+      shortDescription:
+        'Complete 12-week strength training program with videos and guides',
       type: ProductType.DIGITAL,
       status: ProductStatus.ACTIVE,
       price: 9999, // $99.99 CAD
@@ -338,21 +598,28 @@ async function seedSampleProducts() {
       fileSize: 15728640, // ~15MB
       fileMimeType: 'application/pdf',
       metaTitle: '12-Week Strength Building Program - Get Strong Fast',
-      metaDescription: 'Transform your body with our proven 12-week strength training program. Includes everything you need to build muscle and strength.',
+      metaDescription:
+        'Transform your body with our proven 12-week strength training program. Includes everything you need to build muscle and strength.',
       featured: true,
-      tags: JSON.stringify(['strength', 'training', 'muscle-building', 'digital', 'program']),
+      tags: JSON.stringify([
+        'strength',
+        'training',
+        'muscle-building',
+        'digital',
+        'program',
+      ]),
       images: {
         create: [
           {
             url: '/images/products/workout-program-1.jpg',
             altText: '12-Week Strength Building Program Cover',
             sortOrder: 1,
-            isPrimary: true
-          }
-        ]
-      }
-    }
-  })
+            isPrimary: true,
+          },
+        ],
+      },
+    },
+  });
 
   // Create subscription plan for the workout program
   await prisma.subscriptionPlan.create({
@@ -364,21 +631,26 @@ async function seedSampleProducts() {
       billingInterval: 'month',
       trialDays: 7,
       stripePriceId: 'price_test_monthly_workout_plan', // Placeholder for development
-      features: JSON.stringify(['Monthly new programs', 'Video tutorials', 'Nutrition guides', 'Community access']),
+      features: JSON.stringify([
+        'Monthly new programs',
+        'Video tutorials',
+        'Nutrition guides',
+        'Community access',
+      ]),
       isActive: true,
-      sortOrder: 1
-    }
-  })
+      sortOrder: 1,
+    },
+  });
 
-  console.log('✅ Seeded sample products')
+  console.log('✅ Seeded sample products');
 }
 
 async function seedSampleUsers() {
-  console.log('👥 Seeding sample users (development only)...')
-  
+  console.log('👥 Seeding sample users (development only)...');
+
   // Create admin user
-  const hashedPassword = await bcrypt.hash('admin123!', 12)
-  
+  const hashedPassword = await bcrypt.hash('admin123!', 12);
+
   const adminUser = await prisma.user.create({
     data: {
       email: 'admin@example.com',
@@ -397,15 +669,15 @@ async function seedSampleUsers() {
           city: 'Toronto',
           province: CanadianProvince.ON,
           postalCode: 'M5V 1A1',
-          phone: '+1-416-555-0123'
-        }
-      }
-    }
-  })
+          phone: '+1-416-555-0123',
+        },
+      },
+    },
+  });
 
   // Create sample customer
-  const customerPassword = await bcrypt.hash('customer123!', 12)
-  
+  const customerPassword = await bcrypt.hash('customer123!', 12);
+
   const customerUser = await prisma.user.create({
     data: {
       email: 'customer@example.com',
@@ -424,15 +696,15 @@ async function seedSampleUsers() {
           city: 'Vancouver',
           province: CanadianProvince.BC,
           postalCode: 'V6B 1A1',
-          phone: '+1-604-555-0123'
-        }
-      }
-    }
-  })
+          phone: '+1-604-555-0123',
+        },
+      },
+    },
+  });
 
   // Create support user
-  const supportPassword = await bcrypt.hash('support123!', 12)
-  
+  const supportPassword = await bcrypt.hash('support123!', 12);
+
   await prisma.user.create({
     data: {
       email: 'support@example.com',
@@ -442,22 +714,22 @@ async function seedSampleUsers() {
       emailVerified: true,
       emailVerifiedAt: new Date(),
       status: 'ACTIVE',
-      role: UserRole.SUPPORT
-    }
-  })
+      role: UserRole.SUPPORT,
+    },
+  });
 
-  console.log('✅ Seeded sample users (admin, customer, support)')
-  console.log('🔑 Login credentials:')
-  console.log('   Admin: admin@example.com / admin123!')
-  console.log('   Customer: customer@example.com / customer123!')
-  console.log('   Support: support@example.com / support123!')
+  console.log('✅ Seeded sample users (admin, customer, support)');
+  console.log('🔑 Login credentials:');
+  console.log('   Admin: admin@example.com / admin123!');
+  console.log('   Customer: customer@example.com / customer123!');
+  console.log('   Support: support@example.com / support123!');
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Error during seeding:', e)
-    process.exit(1)
+  .catch(e => {
+    console.error('❌ Error during seeding:', e);
+    process.exit(1);
   })
   .finally(async () => {
-    await prisma.$disconnect()
-  })
+    await prisma.$disconnect();
+  });

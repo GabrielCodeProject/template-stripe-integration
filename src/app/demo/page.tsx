@@ -1,28 +1,27 @@
 'use client';
 
-import * as React from 'react';
 import { useState } from 'react';
 
 import {
-  ResponsiveLayout,
-  PageHeader,
-  Container,
-  Stack,
-  GridLayout,
+  Badge,
+  Button,
+  CanadianTaxDisplay,
   Card,
+  CardContent,
   CardHeader,
   CardTitle,
-  CardContent,
-  Button,
-  Badge,
-  ProductCard,
-  ShoppingCart,
-  CanadianTaxDisplay,
+  Container,
   DashboardOverview,
-  PaymentForm,
-  SubscriptionManagement,
   ErrorBoundary,
+  GridLayout,
   LoadingSpinner,
+  PageHeader,
+  PaymentForm,
+  ProductCard,
+  ResponsiveLayout,
+  ShoppingCart,
+  Stack,
+  SubscriptionManagement,
 } from '@/components/ui';
 
 // Mock data
